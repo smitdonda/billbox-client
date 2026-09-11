@@ -16,9 +16,18 @@ Against a deployment instead of localhost:
 E2E_BASE_URL=https://billbox-client.vercel.app npm run test:e2e
 ```
 
-With no `E2E_BASE_URL` the config starts `npm start` itself and reuses a dev
-server already listening on port 3000 — so a stale one left running is what the
-tests will measure. Stop it first if in doubt.
+With no `E2E_BASE_URL` the config starts `npm start` on port **3100** — its own
+port, not the 3000 a dev server takes, so the suite can never end up measuring
+whatever other project happens to be running. A server already listening on
+3100 is reused.
+
+On Windows a dev server that Playwright started itself can keep the run from
+exiting once the tests are done. Start it yourself first if that bites:
+
+```bash
+set PORT=3100 && npm start      # in another terminal
+npm run test:e2e
+```
 
 ## What they need
 

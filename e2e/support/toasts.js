@@ -8,6 +8,17 @@ const TOAST = "[data-sonner-toast]";
  * credentials are typed here.
  */
 async function armFailingLogin(page, { fail = "abort" } = {}) {
+  // "Not signed in", answered here rather than by an API, so the suite runs
+  // against a plain static build with nothing behind /api. The app treats a
+  // 401 on this route as an answer, not as an expired session.
+  await page.route("**/api/auth/me", (route) =>
+    route.fulfill({
+      status: 401,
+      contentType: "application/json",
+      body: JSON.stringify({ success: false, message: "Not signed in" }),
+    })
+  );
+
   await page.route("**/api/auth/login", (route) => {
     if (fail === "abort") return route.abort("failed");
     if (fail === "timeout") return route.abort("timedout");
