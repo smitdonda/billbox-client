@@ -66,10 +66,14 @@ module.exports = defineConfig({
       // Pixel 7 brings what the desktop browser cannot fake: real touch
       // events, pointer: coarse, and hover: none.
       use: { ...devices["Pixel 7"] },
+      // Hover tests would only skip here; leave them out instead.
+      grepInvert: /@hover/,
     },
     {
       name: "desktop",
       use: { ...devices["Desktop Chrome"] },
+      // Touch tests would only skip here; leave them out instead.
+      grepInvert: /@touch/,
     },
   ],
   webServer: startsItsOwnServer

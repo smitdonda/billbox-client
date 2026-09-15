@@ -61,12 +61,9 @@ test.describe("the stack", () => {
   });
 });
 
-test.describe("touch", () => {
-  test.skip(
-    ({ hasTouch }) => !hasTouch,
-    "covers what only exists on a touch device"
-  );
-
+// Only exists on a touch device, so only the phone project runs it (see the
+// `grepInvert` in playwright.config.js).
+test.describe("touch", { tag: "@touch" }, () => {
   test("the close button answers a finger, not just a cursor", async ({
     page,
   }) => {
@@ -153,39 +150,38 @@ test.describe("the painted toast", () => {
     expect(seen.pageScrollsSideways).toBe(false);
   });
 
-  test("the timer bar holds while the toast is held", async ({
-    page,
-  }, testInfo) => {
-    test.skip(
-      testInfo.project.name === "phone",
-      "holding is a hover, which a phone does not have"
-    );
+  // Holding is a hover, which a phone does not have, so only the desktop
+  // project runs it.
+  test(
+    "the timer bar holds while the toast is held",
+    { tag: "@hover" },
+    async ({ page }) => {
+      await armFailingLogin(page);
+      await raiseToasts(page);
 
-    await armFailingLogin(page);
-    await raiseToasts(page);
+      await page.locator(TOAST).first().hover();
+      await page.waitForTimeout(300);
+      const held = await page.evaluate(
+        (sel) =>
+          getComputedStyle(
+            document.querySelector(`${sel} [data-content]`),
+            "::after"
+          ).animationPlayState,
+        TOAST
+      );
+      expect(held).toBe("paused");
 
-    await page.locator(TOAST).first().hover();
-    await page.waitForTimeout(300);
-    const held = await page.evaluate(
-      (sel) =>
-        getComputedStyle(
-          document.querySelector(`${sel} [data-content]`),
-          "::after"
-        ).animationPlayState,
-      TOAST
-    );
-    expect(held).toBe("paused");
-
-    await page.mouse.move(10, 400);
-    await page.waitForTimeout(300);
-    const released = await page.evaluate(
-      (sel) =>
-        getComputedStyle(
-          document.querySelector(`${sel} [data-content]`),
-          "::after"
-        ).animationPlayState,
-      TOAST
-    );
-    expect(released).toBe("running");
-  });
+      await page.mouse.move(10, 400);
+      await page.waitForTimeout(300);
+      const released = await page.evaluate(
+        (sel) =>
+          getComputedStyle(
+            document.querySelector(`${sel} [data-content]`),
+            "::after"
+          ).animationPlayState,
+        TOAST
+      );
+      expect(released).toBe("running");
+    }
+  );
 });
