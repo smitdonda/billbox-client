@@ -21,8 +21,11 @@ port, not the 3000 a dev server takes, so the suite can never end up measuring
 whatever other project happens to be running. A server already listening on
 3100 is reused.
 
-On Windows a dev server that Playwright started itself can keep the run from
-exiting once the tests are done. Start it yourself first if that bites:
+On Windows, Playwright stops the dev server it started with `taskkill`. When
+`C:\Windows\System32` is missing from PATH that command is not found, the
+server keeps running, and the run never exits after the last test.
+`playwright.config.js` puts System32 back on PATH for the run to prevent this.
+If a run still hangs, start the server yourself first:
 
 ```bash
 set PORT=3100 && npm start      # in another terminal

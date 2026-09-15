@@ -1,4 +1,27 @@
+const path = require("path");
 const { defineConfig, devices } = require("@playwright/test");
+
+/*
+ * On Windows, Playwright stops the dev server it started by running a bare
+ * `taskkill`. If System32 is missing from PATH, that command is not found, the
+ * failure is swallowed, the server lives on, and the run never exits after the
+ * last test. Put System32 back for this process so the teardown always works.
+ */
+if (process.platform === "win32") {
+  const system32 = path.join(
+    process.env.SystemRoot || "C:\\Windows",
+    "System32"
+  );
+  const entries = (process.env.PATH || "").split(path.delimiter);
+  if (
+    !entries.some(
+      (entry) =>
+        entry.toLowerCase().replace(/\\+$/, "") === system32.toLowerCase()
+    )
+  ) {
+    process.env.PATH = [system32, ...entries].join(path.delimiter);
+  }
+}
 
 /*
  * Two projects, because half of what these tests check only exists on one side
