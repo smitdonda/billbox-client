@@ -16,6 +16,8 @@ module.exports = {
         "accent-fg": "rgb(var(--accent-fg) / <alpha-value>)",
         success: "rgb(var(--success) / <alpha-value>)",
         warning: "rgb(var(--warning) / <alpha-value>)",
+        /* Amber text on a warning tint; see --warning-ink. */
+        "warning-ink": "rgb(var(--warning-ink) / <alpha-value>)",
         danger: "rgb(var(--danger) / <alpha-value>)",
         /* The lighter half of the header gradient. */
         accent2: "rgb(var(--accent2) / <alpha-value>)",

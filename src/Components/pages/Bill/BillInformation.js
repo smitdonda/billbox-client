@@ -1,16 +1,46 @@
 import React, { useMemo, useState } from "react";
-import { Link } from "react-router-dom";
 import moment from "moment";
 import { toast } from "sonner";
 
 import PageHeader from "../../ui/PageHeader";
 import DataTable from "../../ui/DataTable";
 import ConfirmDialog from "../../ui/ConfirmDialog";
-import { Button, IconButton } from "../../ui/Button";
-import { money } from "../../ui/format";
+import Avatar from "../../ui/Avatar";
+import StatusPill from "../../ui/StatusPill";
+import RowMenu from "../../ui/RowMenu";
+import { Button } from "../../ui/Button";
+import { money, number } from "../../ui/format";
 import { PlusIcon, PencilIcon, TrashIcon, FileTextIcon } from "../../ui/Icons";
 import useServerTable from "../../../hooks/useServerTable";
 import axiosInstance, { errorMessage } from "../../../config/AxiosInstance";
+
+/* The first line item and a count of the rest, so every row stays one line
+   tall. The rest are named in the tooltip and listed on the invoice. */
+function ItemChips({ items = [] }) {
+  if (!items.length) return <span className="text-faint">—</span>;
+  const [first, ...others] = items;
+
+  return (
+    <div className="flex min-w-0 items-center gap-1.5">
+      <span className="min-w-0 truncate rounded-md bg-elevated px-2 py-0.5 text-[12.5px] text-fg">
+        {first.productname}
+        {first.quantity ? (
+          <span className="ml-1 font-medium tabular-nums text-muted">
+            ×{number(first.quantity)}
+          </span>
+        ) : null}
+      </span>
+      {others.length > 0 && (
+        <span
+          title={others.map((p) => p.productname).join(", ")}
+          className="shrink-0 rounded-md bg-elevated px-2 py-0.5 text-[12.5px] tabular-nums text-muted"
+        >
+          +{others.length}
+        </span>
+      )}
+    </div>
+  );
+}
 
 function BillInformation() {
   const {
@@ -51,19 +81,50 @@ function BillInformation() {
     () => [
       {
         key: "name",
-        header: "Bill",
+        header: "Customer",
         cell: ({ row }) => (
-          <div className="min-w-0">
-            <p className="truncate font-medium text-fg">
-              {row.name || "Unnamed customer"}
-            </p>
-            <p className="truncate font-mono text-[12px] text-faint">
-              #{row.id}
-            </p>
+          <div className="flex min-w-0 items-center gap-3">
+            <Avatar name={row.name} />
+            <div className="min-w-0">
+              <p className="truncate font-medium text-fg">
+                {row.name || "Unnamed customer"}
+              </p>
+              <p className="truncate text-[12.5px] tabular-nums text-muted">
+                Bill #{row.id}
+              </p>
+            </div>
           </div>
         ),
         searchValue: (row) =>
           `${row.name || ""} ${row.id ?? ""} ${row.gstNo || ""}`,
+      },
+      {
+        key: "products",
+        header: "Items",
+        sortable: false,
+        wide: true,
+        searchValue: (row) =>
+          (row.products || []).map((p) => p.productname).join(" "),
+        cell: ({ value }) => <ItemChips items={value || []} />,
+      },
+      {
+        // A bill to a GST-registered business is B2B, anything else B2C —
+        // the split a GST return is filed in.
+        key: "gstNo",
+        header: "Type",
+        sortable: false,
+        searchable: false,
+        cell: ({ value }) =>
+          value ? (
+            <StatusPill
+              tone="accent"
+              title="Billed to a GST-registered business"
+            >
+              B2B
+            </StatusPill>
+          ) : (
+            <StatusPill title="The customer has no GSTIN">B2C</StatusPill>
+          ),
       },
       {
         key: "createdAt",
@@ -75,63 +136,13 @@ function BillInformation() {
         ),
       },
       {
-        key: "products",
-        header: "Items",
-        sortable: false,
-        wide: true,
-        searchValue: (row) =>
-          (row.products || []).map((p) => p.productname).join(" "),
-        cell: ({ value }) => {
-          const items = value || [];
-          if (!items.length) return <span className="text-faint">—</span>;
-          const head = items.slice(0, 2);
-          return (
-            <div className="min-w-0">
-              {head.map((p, i) => (
-                <p
-                  key={`${p.productname}-${i}`}
-                  className="truncate text-[13px]"
-                >
-                  {p.productname}
-                  {p.quantity ? (
-                    <span className="ml-1.5 text-faint">×{p.quantity}</span>
-                  ) : null}
-                </p>
-              ))}
-              {items.length > head.length && (
-                <p className="text-[12px] text-faint">
-                  +{items.length - head.length} more
-                </p>
-              )}
-            </div>
-          );
-        },
-      },
-      {
         key: "totalproductsprice",
         header: "Total",
         align: "right",
         cell: ({ value }) => (
-          <span className="font-mono tabular-nums font-medium text-fg">
+          <span className="text-[14.5px] font-semibold tabular-nums text-fg">
             {money(value)}
           </span>
-        ),
-      },
-      {
-        key: "invoice",
-        header: "Invoice",
-        align: "center",
-        sortable: false,
-        searchable: false,
-        cell: ({ row }) => (
-          <Link
-            to={`/billtable/${row._id}`}
-            aria-label="Open invoice"
-            title="Open invoice"
-            className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-line text-muted transition-colors hover:border-strong hover:text-fg focus-ring"
-          >
-            <FileTextIcon size={16} />
-          </Link>
         ),
       },
     ],
@@ -167,8 +178,9 @@ function BillInformation() {
           meta.total > 0 && (
             /* Summed in the database over every matching bill. Adding it up
                here meant downloading all of them first. */
-            <span className="hidden text-[13px] text-muted lg:inline">
-              <span className="font-mono tabular-nums text-fg">
+            <span className="text-[13px] tabular-nums text-muted">
+              {number(meta.total)} {meta.total === 1 ? "bill" : "bills"} ·{" "}
+              <span className="font-medium text-fg">
                 {money(meta.totalBilled || 0)}
               </span>{" "}
               billed
@@ -177,19 +189,30 @@ function BillInformation() {
         }
         rowActions={(row) => (
           <>
-            <Link
-              to={`/billform/${row._id}`}
-              aria-label="Edit bill"
-              title="Edit bill"
-              className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-muted transition-colors hover:bg-elevated hover:text-fg focus-ring"
+            <Button
+              to={`/billtable/${row._id}`}
+              variant="secondary"
+              size="sm"
+              icon={FileTextIcon}
+              aria-label={`Invoice for bill #${row.id}`}
             >
-              <PencilIcon size={16} />
-            </Link>
-            <IconButton
-              icon={TrashIcon}
-              label="Delete bill"
-              tone="danger"
-              onClick={() => setPendingDelete(row)}
+              Invoice
+            </Button>
+            <RowMenu
+              label={`More actions for bill #${row.id}`}
+              items={[
+                {
+                  label: "Edit bill",
+                  icon: PencilIcon,
+                  to: `/billform/${row._id}`,
+                },
+                {
+                  label: "Delete bill",
+                  icon: TrashIcon,
+                  tone: "danger",
+                  onSelect: () => setPendingDelete(row),
+                },
+              ]}
             />
           </>
         )}

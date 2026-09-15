@@ -30,6 +30,10 @@
     --success: 39 119 92;
     --warning: 165 118 33;
     --danger: 173 57 57;
+    /* Amber for words. --warning is tuned for fills and borders; as 12px text
+       on its own 10% tint it reads 3.6:1, so a status pill's label takes this
+       darker step instead and reads 5.5:1. */
+    --warning-ink: 128 91 23;
     /* The lighter half of the dashboard header gradient. White on it reads
        5.87:1, so the greeting and its figures clear AA. */
     --accent2: 58 106 132;

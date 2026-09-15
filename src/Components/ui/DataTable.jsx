@@ -7,20 +7,16 @@ import React, {
 } from "react";
 import cn from "./cn";
 import {
-  ChevronDownIcon,
-  ChevronUpIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
   ChevronsLeftIcon,
   ChevronsRightIcon,
   SearchIcon,
-  SortIcon,
   InboxIcon,
-  CopyIcon,
-  CheckIcon,
   XIcon,
 } from "./Icons";
 import { Button, IconButton } from "./Button";
+import CopyValue from "./CopyValue";
 
 /* ------------------------------------------------------------------ */
 /*  helpers                                                            */
@@ -66,50 +62,46 @@ const alignClass = (col) =>
     col.align === "center" && "text-center"
   );
 
-/* ------------------------------------------------------------------ */
-/*  copy-to-clipboard cell                                             */
-/* ------------------------------------------------------------------ */
+const ARIA_SORT = { asc: "ascending", desc: "descending" };
 
-function CopyValue({ value }) {
-  const [copied, setCopied] = useState(false);
-
-  useEffect(() => {
-    if (!copied) return undefined;
-    const timer = window.setTimeout(() => setCopied(false), 1400);
-    return () => window.clearTimeout(timer);
-  }, [copied]);
-
-  if (value == null || value === "")
-    return <span className="text-faint">—</span>;
-
-  const copy = async () => {
-    try {
-      await navigator.clipboard.writeText(String(value));
-      setCopied(true);
-    } catch {
-      /* clipboard blocked (insecure origin) — leave the value selectable */
-    }
-  };
-
+/*
+ * Both chevrons show on every sortable column, so which columns sort can be
+ * seen without hovering for it. Sorting colours the header's chevrons and
+ * fades the one pointing against the order the rows are now in.
+ */
+function SortIndicator({ dir }) {
   return (
-    <button
-      type="button"
-      onClick={copy}
-      title={`Copy ${value}`}
-      className="group/copy inline-flex max-w-full items-center gap-1.5 rounded-md px-1.5 py-1 -mx-1.5 text-left transition-colors hover:bg-strong/40 focus-ring"
-    >
-      <span className="truncate font-mono text-[12.5px]">{String(value)}</span>
-      {copied ? (
-        <CheckIcon size={13} className="shrink-0 text-success" />
-      ) : (
-        <CopyIcon
-          size={13}
-          className="shrink-0 text-faint opacity-0 transition-opacity group-hover/copy:opacity-100"
-        />
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.25"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      focusable="false"
+      className={cn(
+        "shrink-0 transition-colors",
+        dir ? "text-accent" : "text-muted/70 group-hover/sort:text-fg"
       )}
-    </button>
+    >
+      <path d="m8 10 4-4 4 4" className={cn(dir === "desc" && "opacity-25")} />
+      <path d="m8 14 4 4 4-4" className={cn(dir === "asc" && "opacity-25")} />
+    </svg>
   );
 }
+
+/*
+ * Every record is its own rounded row on the page ground. A cell can only
+ * draw part of a row's outline, so each one takes the top and bottom edge and
+ * the first and last add the sides and the rounding.
+ */
+const rowCell =
+  "h-16 border-y border-line bg-surface px-4 align-middle text-fg transition-colors " +
+  "first:rounded-l-xl first:border-l first:pl-5 last:rounded-r-xl last:border-r last:pr-5 " +
+  "group-hover:border-strong";
 
 /* ------------------------------------------------------------------ */
 /*  table                                                              */
@@ -263,18 +255,18 @@ function DataTable({
     />
   );
 
-  /* border-collapse drops a sticky header's own border as it scrolls, so the
-     header rule is drawn as an inset shadow instead. */
+  /* The header sits on the page ground rather than a band of its own. The
+     8px shadow paints that ground over the gap below it, so rows scrolling
+     under the sticky header do not show through between it and the next. */
   const headCell =
-    "sticky top-0 z-10 bg-elevated px-4 py-3 first:pl-5 last:pr-5 text-left " +
-    "text-[11.5px] font-semibold uppercase tracking-[0.07em] text-muted " +
-    "shadow-[inset_0_-1px_0_0_rgb(var(--strong))]";
+    "sticky top-0 z-10 bg-bg px-4 pb-1 pt-2 first:pl-5 last:pr-5 text-left " +
+    "text-[12px] font-medium text-muted shadow-[0_8px_0_0_rgb(var(--bg))]";
 
   return (
-    <div className={cn("card overflow-hidden", className)}>
+    <div className={cn("min-w-0", className)}>
       {/* toolbar ---------------------------------------------------- */}
       {(searchable || toolbar) && (
-        <div className="flex flex-col gap-3 border-b border-line p-3 sm:flex-row sm:items-center sm:justify-between sm:p-4">
+        <div className="flex flex-col gap-3 pb-2 sm:flex-row sm:items-center sm:justify-between">
           {searchable && (
             <div className="relative w-full sm:max-w-xs">
               <SearchIcon
@@ -286,7 +278,7 @@ function DataTable({
                 onChange={(event) => setQuery(event.target.value)}
                 placeholder={searchPlaceholder}
                 aria-label={searchPlaceholder}
-                className="h-10 w-full rounded-xl border border-line bg-bg pl-10 pr-9 text-sm text-fg placeholder:text-faint transition-colors hover:border-strong focus:border-fg focus:outline-none focus:ring-2 focus:ring-fg/15"
+                className="h-10 w-full rounded-xl border border-line bg-surface pl-10 pr-9 text-sm text-fg placeholder:text-faint transition-colors hover:border-strong focus:border-fg focus:outline-none focus:ring-2 focus:ring-fg/15"
               />
               {query && (
                 <button
@@ -300,12 +292,11 @@ function DataTable({
               )}
             </div>
           )}
-          <div className="flex items-center gap-2.5">
-            {toolbar}
-            <span className="hidden shrink-0 rounded-full border border-line bg-elevated px-2.5 py-1 text-[12px] font-medium tabular-nums text-muted sm:inline">
+          {toolbar ?? (
+            <span className="text-[13px] tabular-nums text-muted">
               {totalRows} {totalRows === 1 ? "record" : "records"}
             </span>
-          </div>
+          )}
         </div>
       )}
 
@@ -317,7 +308,7 @@ function DataTable({
           className="max-h-[70vh] overflow-auto"
         >
           <table
-            className="w-full border-collapse text-sm"
+            className="w-full border-separate border-spacing-x-0 border-spacing-y-2 text-sm"
             style={{ minWidth }}
           >
             <thead>
@@ -325,10 +316,14 @@ function DataTable({
                 {columns.map((col) => {
                   const active = sort.key === col.key;
                   const sortable = col.sortable !== false;
+                  const dir = active ? sort.dir : null;
                   return (
                     <th
                       key={col.key}
                       scope="col"
+                      aria-sort={
+                        sortable ? ARIA_SORT[dir] || "none" : undefined
+                      }
                       style={col.width ? { width: col.width } : undefined}
                       className={cn(headCell, alignClass(col))}
                     >
@@ -338,31 +333,14 @@ function DataTable({
                           onClick={() => toggleSort(col)}
                           aria-label={`Sort by ${col.header}`}
                           className={cn(
-                            "group/sort inline-flex items-center gap-1.5 rounded-md px-1 py-0.5 -mx-1",
-                            /* A button does not inherit the header cell's
-                               text-transform, so the case is restated here or
-                               sortable columns read differently to the rest. */
-                            "uppercase tracking-[0.07em]",
+                            "group/sort inline-flex items-center gap-1 rounded-md px-1 py-0.5 -mx-1",
                             "transition-colors hover:text-fg focus-ring",
                             active && "text-fg",
                             col.align === "right" && "flex-row-reverse"
                           )}
                         >
                           {col.header}
-                          {active ? (
-                            sort.dir === "asc" ? (
-                              <ChevronUpIcon size={13} />
-                            ) : (
-                              <ChevronDownIcon size={13} />
-                            )
-                          ) : (
-                            /* Idle arrows on every column are noise; they
-                               show up only under the pointer. */
-                            <SortIcon
-                              size={12}
-                              className="opacity-0 transition-opacity group-hover/sort:opacity-50"
-                            />
-                          )}
+                          <SortIndicator dir={dir} />
                         </button>
                       ) : (
                         col.header
@@ -373,12 +351,9 @@ function DataTable({
                 {rowActions && (
                   <th
                     scope="col"
-                    className={cn(
-                      headCell,
-                      "w-px whitespace-nowrap text-right"
-                    )}
+                    className={cn(headCell, "w-px whitespace-nowrap")}
                   >
-                    Actions
+                    <span className="sr-only">Actions</span>
                   </th>
                 )}
               </tr>
@@ -387,15 +362,9 @@ function DataTable({
             <tbody>
               {loading &&
                 Array.from({ length: Math.min(pageSize, 6) }).map((_, r) => (
-                  <tr
-                    key={`sk-${r}`}
-                    className="border-b border-line last:border-0"
-                  >
+                  <tr key={`sk-${r}`}>
                     {Array.from({ length: colCount }).map((__, c) => (
-                      <td
-                        key={`sk-${r}-${c}`}
-                        className="px-4 py-3.5 first:pl-5 last:pr-5"
-                      >
+                      <td key={`sk-${r}-${c}`} className={rowCell}>
                         <div
                           className="skeleton h-4"
                           style={{ width: `${45 + ((r + c) % 4) * 14}%` }}
@@ -407,15 +376,12 @@ function DataTable({
 
               {!loading &&
                 rows.map((row, index) => (
-                  <tr
-                    key={getRowId(row, index)}
-                    className="group border-b border-line transition-colors last:border-0 hover:bg-elevated"
-                  >
+                  <tr key={getRowId(row, index)} className="group">
                     {columns.map((col) => (
                       <td
                         key={col.key}
                         className={cn(
-                          "px-4 py-3.5 first:pl-5 last:pr-5 align-middle text-fg",
+                          rowCell,
                           alignClass(col),
                           col.mono && "font-mono text-[13px]",
                           col.truncate && "max-w-[16rem] truncate"
@@ -425,10 +391,12 @@ function DataTable({
                       </td>
                     ))}
                     {rowActions && (
-                      <td className="whitespace-nowrap px-4 py-3.5 pr-5 text-right">
-                        {/* Dimmed rather than hidden: still findable without a
-                            pointer, but it stops competing with the data. */}
-                        <div className="flex items-center justify-end gap-1 opacity-60 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100">
+                      <td
+                        className={cn(rowCell, "whitespace-nowrap text-right")}
+                      >
+                        {/* Full strength, always: a hover-only action is
+                            invisible to keyboard and touch. */}
+                        <div className="flex items-center justify-end gap-1.5">
                           {rowActions(row)}
                         </div>
                       </td>
@@ -438,7 +406,10 @@ function DataTable({
 
               {showEmpty && (
                 <tr>
-                  <td colSpan={colCount} className="px-4 py-16">
+                  <td
+                    colSpan={colCount}
+                    className="rounded-xl border border-line bg-surface px-4 py-16"
+                  >
                     {emptyBlock}
                   </td>
                 </tr>
@@ -464,10 +435,13 @@ function DataTable({
       </div>
 
       {/* mobile cards ------------------------------------------------ */}
-      <div className="divide-y divide-line md:hidden">
+      <div className="space-y-2 md:hidden">
         {loading &&
           Array.from({ length: 3 }).map((_, r) => (
-            <div key={`msk-${r}`} className="space-y-2.5 p-4">
+            <div
+              key={`msk-${r}`}
+              className="space-y-2.5 rounded-xl border border-line bg-surface p-4"
+            >
               <div className="skeleton h-4 w-1/3" />
               <div className="skeleton h-3 w-2/3" />
               <div className="skeleton h-3 w-1/2" />
@@ -480,14 +454,14 @@ function DataTable({
             return (
               <div
                 key={getRowId(row, index)}
-                className="p-4 transition-colors active:bg-elevated"
+                className="rounded-xl border border-line bg-surface p-4 transition-colors active:border-strong"
               >
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0 flex-1 font-medium text-fg">
                     {renderCell(row, primary, index)}
                   </div>
                   {rowActions && (
-                    <div className="flex shrink-0 items-center gap-1">
+                    <div className="flex shrink-0 items-center gap-1.5">
                       {rowActions(row)}
                     </div>
                   )}
@@ -495,7 +469,7 @@ function DataTable({
                 <dl className="mt-3 grid grid-cols-2 gap-x-4 gap-y-2.5 border-t border-line pt-3">
                   {restCols.map((col) => (
                     <div key={col.key} className={cn(col.wide && "col-span-2")}>
-                      <dt className="text-[11px] font-semibold uppercase tracking-[0.07em] text-faint">
+                      <dt className="text-[12px] font-medium text-muted">
                         {col.header}
                       </dt>
                       <dd className="mt-1 break-words text-[13.5px] text-fg">
@@ -508,14 +482,18 @@ function DataTable({
             );
           })}
 
-        {showEmpty && <div className="p-10">{emptyBlock}</div>}
+        {showEmpty && (
+          <div className="rounded-xl border border-line bg-surface p-10">
+            {emptyBlock}
+          </div>
+        )}
       </div>
 
       {/* pagination -------------------------------------------------- */}
       {!showEmpty && (
-        <div className="flex flex-col gap-3 border-t border-line bg-elevated/40 px-3 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-4">
+        <div className="flex flex-col gap-3 pt-2 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-2 text-[13px] text-muted">
-            <span className="hidden sm:inline">Rows</span>
+            <span className="hidden sm:inline">Rows per page</span>
             <select
               value={pageSize}
               onChange={(event) => setPageSize(Number(event.target.value))}
@@ -529,6 +507,7 @@ function DataTable({
               ))}
             </select>
             <span className="tabular-nums">
+              Showing{" "}
               {totalRows === 0
                 ? "0"
                 : `${safePage * pageSize + 1}–${Math.min(
@@ -539,38 +518,42 @@ function DataTable({
             </span>
           </div>
 
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-1.5">
             <IconButton
               icon={ChevronsLeftIcon}
               label="First page"
               disabled={safePage === 0}
               onClick={() => setPage(0)}
-              className="disabled:opacity-30 disabled:pointer-events-none"
+              className="hidden disabled:pointer-events-none disabled:opacity-30 sm:inline-flex"
             />
-            <IconButton
+            <Button
+              variant="secondary"
+              size="sm"
               icon={ChevronLeftIcon}
-              label="Previous page"
               disabled={safePage === 0}
               onClick={() => setPage((p) => Math.max(0, p - 1))}
-              className="disabled:opacity-30 disabled:pointer-events-none"
-            />
-            <span className="px-2 text-[13px] font-medium tabular-nums text-fg">
+            >
+              Previous
+            </Button>
+            <span className="px-1.5 text-[13px] font-medium tabular-nums text-fg">
               Page {safePage + 1}
               <span className="font-normal text-muted"> of {pageCount}</span>
             </span>
-            <IconButton
-              icon={ChevronRightIcon}
-              label="Next page"
+            <Button
+              variant="secondary"
+              size="sm"
+              iconRight={ChevronRightIcon}
               disabled={safePage >= pageCount - 1}
               onClick={() => setPage((p) => Math.min(pageCount - 1, p + 1))}
-              className="disabled:opacity-30 disabled:pointer-events-none"
-            />
+            >
+              Next
+            </Button>
             <IconButton
               icon={ChevronsRightIcon}
               label="Last page"
               disabled={safePage >= pageCount - 1}
               onClick={() => setPage(pageCount - 1)}
-              className="disabled:opacity-30 disabled:pointer-events-none"
+              className="hidden disabled:pointer-events-none disabled:opacity-30 sm:inline-flex"
             />
           </div>
         </div>

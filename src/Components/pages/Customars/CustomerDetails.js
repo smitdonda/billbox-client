@@ -5,8 +5,12 @@ import { toast } from "sonner";
 import PageHeader from "../../ui/PageHeader";
 import DataTable from "../../ui/DataTable";
 import ConfirmDialog from "../../ui/ConfirmDialog";
+import Avatar from "../../ui/Avatar";
+import CopyValue from "../../ui/CopyValue";
+import StatusPill from "../../ui/StatusPill";
 import { Button, IconButton } from "../../ui/Button";
 import { PlusIcon, PencilIcon, TrashIcon } from "../../ui/Icons";
+import { number } from "../../ui/format";
 import useServerTable from "../../../hooks/useServerTable";
 import CustomersFrom from "./CustomersFrom";
 import axiosInstance, { errorMessage } from "../../../config/AxiosInstance";
@@ -14,6 +18,7 @@ import axiosInstance, { errorMessage } from "../../../config/AxiosInstance";
 function CustomerDetails() {
   const {
     rows: customers,
+    meta,
     loading,
     reload,
     server,
@@ -72,23 +77,46 @@ function CustomerDetails() {
         key: "name",
         header: "Customer",
         cell: ({ row }) => (
-          <div className="min-w-0">
-            <p className="truncate font-medium text-fg">{row.name || "—"}</p>
-            <p className="truncate text-[12px] text-faint">#{row.id}</p>
+          <div className="flex min-w-0 items-center gap-3">
+            <Avatar name={row.name} />
+            <div className="min-w-0">
+              <p className="truncate font-medium text-fg">{row.name || "—"}</p>
+              <p className="truncate text-[12.5px] text-muted">
+                {row.email || `Customer #${row.id}`}
+              </p>
+            </div>
           </div>
         ),
+        searchValue: (row) => `${row.name || ""} ${row.email || ""}`,
       },
-      { key: "email", header: "Email", truncate: true },
       // Searchable server-side, but not indexed for ordering — offering a
       // sort the database cannot back would just be slow and occasionally
       // fail on a large list.
-      { key: "phoneNo", header: "Phone", mono: true, sortable: false },
+      {
+        key: "phoneNo",
+        header: "Phone",
+        sortable: false,
+        cell: ({ value }) =>
+          value ? (
+            <span className="whitespace-nowrap tabular-nums">{value}</span>
+          ) : (
+            <span className="text-faint">—</span>
+          ),
+      },
       {
         key: "gstNo",
-        header: "GST number",
-        copyable: true,
+        header: "GST",
         wide: true,
         sortable: false,
+        cell: ({ value }) =>
+          value ? (
+            <div className="flex min-w-0 items-center gap-2">
+              <StatusPill tone="success">Registered</StatusPill>
+              <CopyValue value={value} />
+            </div>
+          ) : (
+            <StatusPill>Unregistered</StatusPill>
+          ),
       },
       {
         key: "createdAt",
@@ -131,13 +159,31 @@ function CustomerDetails() {
             New customer
           </Button>
         }
+        toolbar={
+          meta.total > 0 && (
+            /* Both counts cover every customer the search matches, not just
+               the page on screen. */
+            <span className="text-[13px] tabular-nums text-muted">
+              {number(meta.total)} {meta.total === 1 ? "customer" : "customers"}{" "}
+              ·{" "}
+              <span className="font-medium text-fg">
+                {number(meta.gstRegistered || 0)}
+              </span>{" "}
+              GST-registered
+            </span>
+          )
+        }
         rowActions={(row) => (
           <>
-            <IconButton
+            <Button
+              variant="secondary"
+              size="sm"
               icon={PencilIcon}
-              label="Edit customer"
               onClick={() => openEdit(row)}
-            />
+              aria-label={`Edit ${row.name || "customer"}`}
+            >
+              Edit
+            </Button>
             <IconButton
               icon={TrashIcon}
               label="Delete customer"

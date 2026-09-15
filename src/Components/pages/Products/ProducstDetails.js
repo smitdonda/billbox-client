@@ -4,36 +4,40 @@ import { toast } from "sonner";
 import PageHeader from "../../ui/PageHeader";
 import DataTable from "../../ui/DataTable";
 import ConfirmDialog from "../../ui/ConfirmDialog";
+import StatusPill from "../../ui/StatusPill";
 import { Button, IconButton } from "../../ui/Button";
-import { PlusIcon, PencilIcon, TrashIcon } from "../../ui/Icons";
+import { CrateIcon, PlusIcon, PencilIcon, TrashIcon } from "../../ui/Icons";
 import { money, number } from "../../ui/format";
 import useServerTable from "../../../hooks/useServerTable";
 import ProductForm from "./ProductFrom";
 import axiosInstance, { errorMessage } from "../../../config/AxiosInstance";
 
-const LOW_STOCK_AT = 5;
+/* Only until the first page arrives: after that the API says where "low"
+   starts, so this page and the dashboard always agree. */
+const FALLBACK_LOW_STOCK_AT = 5;
 
-function StockBadge({ qty }) {
+/* Stock in words with its count. Every row wears one, so a low shelf stands
+   out by what it says, not only by being the one row with a chip. */
+function StockStatus({ qty, lowAt }) {
   const value = Number(qty) || 0;
-  // Only the exceptions wear a chip; a healthy count is just a number.
-  const tone =
-    value === 0
-      ? "bg-danger/10 text-danger"
-      : value <= LOW_STOCK_AT
-        ? "bg-warning/10 text-warning"
-        : "text-fg";
-  const label =
-    value === 0 ? "Out of stock" : value <= LOW_STOCK_AT ? "Low" : null;
-
+  if (value === 0) {
+    return (
+      <StatusPill tone="danger" dot>
+        Out of stock
+      </StatusPill>
+    );
+  }
+  if (value <= lowAt) {
+    return (
+      <StatusPill tone="warning" dot>
+        Low · {number(value)}
+      </StatusPill>
+    );
+  }
   return (
-    <span className="inline-flex items-center gap-2">
-      <span
-        className={`rounded-md px-2 py-1 font-mono text-[12.5px] tabular-nums ${tone}`}
-      >
-        {number(value)}
-      </span>
-      {label && <span className="text-[12px] text-muted">{label}</span>}
-    </span>
+    <StatusPill tone="success" dot>
+      In stock · {number(value)}
+    </StatusPill>
   );
 }
 
@@ -95,31 +99,43 @@ function ProducstDetails() {
     }
   };
 
+  const lowAt = meta.lowStockAt ?? FALLBACK_LOW_STOCK_AT;
+
   const columns = useMemo(
     () => [
       {
         key: "productname",
         header: "Product",
         cell: ({ row }) => (
-          <div className="min-w-0">
-            <p className="truncate font-medium text-fg">
-              {row.productname || "—"}
-            </p>
-            <p className="truncate text-[12px] text-faint">#{row.id}</p>
+          <div className="flex min-w-0 items-center gap-3">
+            <span
+              aria-hidden="true"
+              className="badge h-9 w-9 bg-accent/10 text-accent"
+            >
+              <CrateIcon size={18} />
+            </span>
+            <div className="min-w-0">
+              <p className="truncate font-medium text-fg">
+                {row.productname || "—"}
+              </p>
+              <p className="truncate text-[12.5px] tabular-nums text-muted">
+                #{row.id}
+              </p>
+            </div>
           </div>
         ),
       },
       {
         key: "availableproductqty",
-        header: "In stock",
-        cell: ({ value }) => <StockBadge qty={value} />,
+        header: "Stock",
+        cell: ({ value }) => <StockStatus qty={value} lowAt={lowAt} />,
       },
       {
         key: "unitprice",
         header: "Unit price",
         align: "right",
         cell: ({ value }) => (
-          <span className="font-mono tabular-nums">{money(value)}</span>
+          <span className="tabular-nums">{money(value)}</span>
         ),
       },
       {
@@ -133,13 +149,11 @@ function ProducstDetails() {
         accessor: (row) =>
           (Number(row.unitprice) || 0) * (Number(row.availableproductqty) || 0),
         cell: ({ value }) => (
-          <span className="font-mono tabular-nums text-muted">
-            {money(value)}
-          </span>
+          <span className="tabular-nums text-muted">{money(value)}</span>
         ),
       },
     ],
-    []
+    [lowAt]
   );
 
   return (
@@ -169,32 +183,47 @@ function ProducstDetails() {
         }
         toolbar={
           meta.total > 0 && (
-            /* Summed across the whole catalogue by the server, not across the
-               rows that happen to be on screen. */
-            <span className="hidden items-center gap-3 text-[13px] text-muted lg:flex">
+            /* Counted and summed across the whole catalogue by the server,
+               not across the rows that happen to be on screen. */
+            <span className="flex flex-wrap items-center gap-x-1.5 text-[13px] tabular-nums text-muted">
               <span>
-                <span className="font-mono tabular-nums text-fg">
+                {number(meta.total)} {meta.total === 1 ? "product" : "products"}
+              </span>
+              <span aria-hidden="true">·</span>
+              <span>
+                <span className="font-medium text-fg">
                   {number(meta.stockUnits || 0)}
                 </span>{" "}
                 units
               </span>
-              <span className="h-3.5 w-px bg-line" />
+              <span aria-hidden="true">·</span>
               <span>
-                <span className="font-mono tabular-nums text-fg">
+                <span className="font-medium text-fg">
                   {money(meta.stockValue || 0)}
                 </span>{" "}
                 on hand
+              </span>
+              <span aria-hidden="true">·</span>
+              <span
+                className={meta.lowStock ? "font-medium text-warning-ink" : ""}
+              >
+                {number(meta.lowStock || 0)}{" "}
+                {meta.lowStock === 1 ? "needs" : "need"} restocking
               </span>
             </span>
           )
         }
         rowActions={(row) => (
           <>
-            <IconButton
+            <Button
+              variant="secondary"
+              size="sm"
               icon={PencilIcon}
-              label="Edit product"
               onClick={() => openEdit(row)}
-            />
+              aria-label={`Edit ${row.productname || "product"}`}
+            >
+              Edit
+            </Button>
             <IconButton
               icon={TrashIcon}
               label="Delete product"
