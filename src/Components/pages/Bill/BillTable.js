@@ -9,11 +9,78 @@ import { money } from "../../ui/format";
 import { DownloadIcon, ChevronLeftIcon, FileTextIcon } from "../../ui/Icons";
 import axiosInstance, { errorMessage } from "../../../config/AxiosInstance";
 
+const PDF_MARGIN = Margin.SMALL; // mm
+const MM_TO_PX = 96 / 25.4;
+// the part of an A4 page react-to-pdf fills, inside the margins
+const PAGE_WIDTH = (210 - 2 * PDF_MARGIN) * MM_TO_PX;
+const PAGE_HEIGHT = (297 - 2 * PDF_MARGIN) * MM_TO_PX;
+// space above the rows that continue on the next page (the sheet's p-10)
+const NEXT_PAGE_TOP = 40;
+
+// react-to-pdf cuts the captured image into page-high slices, which split
+// rows in half on longer bills. In the copy that gets captured, push every
+// [data-keep] block that a cut would split onto the next page, repeating the
+// table header above moved rows.
+const keepBlocksWhole = (doc) => {
+  const sheet = doc.querySelector(".invoice-sheet");
+  if (!sheet) return;
+  // a sheet wider than the page is scaled down, so one page holds more of it
+  const width = sheet.getBoundingClientRect().width;
+  const pageHeight = PAGE_HEIGHT * Math.max(1, width / PAGE_WIDTH);
+  const headRow = sheet.querySelector("thead tr");
+  const headHeight = headRow ? headRow.getBoundingClientRect().height : 0;
+
+  sheet.querySelectorAll("[data-keep]").forEach((block) => {
+    const box = block.getBoundingClientRect();
+    const top = box.top - sheet.getBoundingClientRect().top;
+    const pageEnd = (Math.floor(top / pageHeight) + 1) * pageHeight;
+    const tooTall = box.height > pageHeight - NEXT_PAGE_TOP - headHeight;
+    if (top + box.height <= pageEnd || tooTall) return;
+
+    const gap = pageEnd - top + NEXT_PAGE_TOP;
+    if (block.tagName === "TR") {
+      const spacer = doc.createElement("tr");
+      const cell = doc.createElement("td");
+      cell.colSpan = 99;
+      cell.style.cssText = `height:${gap}px;padding:0;border:0`;
+      spacer.appendChild(cell);
+      block.before(spacer);
+      if (headRow) spacer.after(headRow.cloneNode(true));
+    } else {
+      const margin = parseFloat(
+        doc.defaultView.getComputedStyle(block).marginTop
+      );
+      block.style.marginTop = `${(margin || 0) + gap}px`;
+    }
+  });
+};
+
 const PDF_OPTIONS = {
   method: "save",
   resolution: Resolution.MEDIUM,
-  page: { margin: Margin.SMALL, format: "a4", orientation: "portrait" },
-  canvas: { mimeType: "image/png", qualityRatio: 1 },
+  page: { margin: PDF_MARGIN, format: "a4", orientation: "portrait" },
+  // JPEG keeps the file small enough to share (PNG came out at 15-19 MB)
+  canvas: { mimeType: "image/jpeg", qualityRatio: 0.92 },
+  overrides: {
+    canvas: {
+      onclone: (doc) => {
+        // html2canvas draws text without letter-spacing one word at a time,
+        // using its own letter widths. In a normal Chrome window those do not
+        // match the page, so words ran together or got stray gaps. Any
+        // letter-spacing makes it place each letter where the page has it.
+        doc.querySelectorAll(".invoice-sheet").forEach((el) => {
+          el.style.letterSpacing = "0.01px";
+        });
+        // each digit is then drawn with its normal width, so lay digits out
+        // that way too (fixed-width ones left a gap after every "1")
+        const digits = doc.createElement("style");
+        digits.textContent =
+          ".invoice-sheet, .invoice-sheet * { font-variant-numeric: normal !important; }";
+        doc.head.appendChild(digits);
+        keepBlocksWhole(doc);
+      },
+    },
+  },
 };
 
 // fixed colours for the invoice so the PDF always looks the same
@@ -30,15 +97,27 @@ function BillTable() {
   const [loading, setLoading] = useState(true);
   const [exporting, setExporting] = useState(false);
 
-  const { toPDF, targetRef: sheetRef } = usePDF(PDF_OPTIONS);
+  // no options here: when usePDF has its own, it ignores the ones given to
+  // toPDF, and the PDF got a timestamp name instead of the invoice number
+  const { toPDF, targetRef: sheetRef } = usePDF();
 
   const downloadPdf = async () => {
+    // html2canvas finds each font's baseline with a 1px <img> placed after
+    // some sample text. Tailwind makes images display:block, which moved that
+    // measurement a line down and drew all PDF text too low.
+    const inlineImages = document.createElement("style");
+    inlineImages.textContent = "img { display: inline !important; }";
     try {
       setExporting(true);
-      await toPDF({ filename: `invoice-${invoice?.id || id}.pdf` });
+      document.head.appendChild(inlineImages);
+      await toPDF({
+        ...PDF_OPTIONS,
+        filename: `invoice-${invoice?.id || id}.pdf`,
+      });
     } catch {
       toast.error("Could not create the PDF, try Print instead");
     } finally {
+      inlineImages.remove();
       setExporting(false);
     }
   };
@@ -135,7 +214,7 @@ function BillTable() {
         </div>
       ) : (
         // fixed width (like A4), scrolls sideways on small screens
-        <div className="overflow-x-auto pb-4">
+        <div className="overflow-x-auto pb-4 print:overflow-visible print:pb-0">
           <div
             ref={sheetRef}
             className={`invoice-sheet mx-auto w-[52rem] min-w-[52rem] rounded-2xl border ${SHEET_LINE} p-10 shadow-soft`}
@@ -260,6 +339,7 @@ function BillTable() {
                 {items.map((line, index) => (
                   <tr
                     key={`${line.productname}-${index}`}
+                    data-keep
                     className={`border-b ${SHEET_LINE}`}
                   >
                     <td className={`px-2 py-3 align-top ${SHEET_MUTED}`}>
@@ -301,7 +381,7 @@ function BillTable() {
             </table>
 
             {/* totals */}
-            <section className="mt-6 flex justify-end">
+            <section data-keep className="mt-6 flex justify-end">
               <dl className="w-72 space-y-2 text-[13px]">
                 <div className="flex justify-between">
                   <dt className={SHEET_MUTED}>Subtotal</dt>
@@ -324,7 +404,7 @@ function BillTable() {
               </dl>
             </section>
 
-            <footer className="mt-16 flex items-end justify-between">
+            <footer data-keep className="mt-16 flex items-end justify-between">
               <p className={`text-[11px] ${SHEET_MUTED}`}>
                 Computer-generated invoice.
               </p>

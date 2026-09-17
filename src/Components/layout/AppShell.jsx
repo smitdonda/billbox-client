@@ -335,11 +335,12 @@ function AppShell() {
     "group relative flex items-center rounded-xl px-3 py-2 text-sm font-medium text-muted transition-colors hover:bg-danger/10 hover:text-danger focus-ring";
 
   return (
-    <div className="min-h-screen bg-bg">
+    // when printing, only the page content (no sidebar or top bar)
+    <div className="min-h-screen bg-bg print:min-h-0 print:bg-transparent">
       {/* desktop sidebar */}
       <aside
         className={cn(
-          "fixed inset-y-0 left-0 z-30 hidden shrink-0 flex-col border-r border-line bg-surface lg:flex",
+          "fixed inset-y-0 left-0 z-30 hidden shrink-0 flex-col border-r border-line bg-surface lg:flex print:!hidden",
           `transition-[width] ${RAIL}`,
           collapsed ? "w-[4.5rem]" : "w-[16rem]"
         )}
@@ -389,7 +390,7 @@ function AppShell() {
 
       {/* mobile drawer */}
       {drawerOpen && (
-        <div className="fixed inset-0 z-40 lg:hidden">
+        <div className="fixed inset-0 z-40 lg:hidden print:hidden">
           <div
             className={cn(
               "absolute inset-0 bg-zinc-950/50 backdrop-blur-[2px]",
@@ -434,12 +435,12 @@ function AppShell() {
       {/* main content */}
       <div
         className={cn(
-          "flex min-h-screen flex-col",
+          "flex min-h-screen flex-col print:min-h-0 print:!pl-0",
           `transition-[padding] ${RAIL}`,
           collapsed ? "lg:pl-[4.5rem]" : "lg:pl-[16rem]"
         )}
       >
-        <header className="sticky top-0 z-20 flex h-16 items-center gap-3 border-b border-line bg-bg/85 px-4 backdrop-blur-md sm:px-6">
+        <header className="sticky top-0 z-20 flex h-16 items-center gap-3 border-b border-line bg-bg/85 px-4 backdrop-blur-md sm:px-6 print:hidden">
           <IconButton
             icon={MenuIcon}
             label="Open menu"
@@ -491,7 +492,7 @@ function AppShell() {
           </div>
         </header>
 
-        <main className="flex-1 px-4 py-6 sm:px-6 sm:py-8">
+        <main className="flex-1 px-4 py-6 sm:px-6 sm:py-8 print:!p-0">
           <div className="mx-auto w-full max-w-7xl">
             <Outlet />
           </div>

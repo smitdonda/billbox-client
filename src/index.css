@@ -409,5 +409,8 @@
   .invoice-sheet {
     box-shadow: none !important;
     border: 0 !important;
+    /* the on-screen width (52rem) is wider than the paper and got cut off */
+    width: auto !important;
+    min-width: 0 !important;
   }
 }
