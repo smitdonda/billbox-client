@@ -270,6 +270,16 @@ export const BuildingIcon = make(
   </>
 );
 
+export const StoreIcon = make(
+  "StoreIcon",
+  <>
+    <path d="M3.5 9 5 4h14l1.5 5" />
+    <path d="M3.5 9a2.83 2.83 0 0 0 5.67 0 2.83 2.83 0 0 0 5.66 0 2.83 2.83 0 0 0 5.67 0" />
+    <path d="M5 11.5V20a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-8.5" />
+    <path d="M10 21v-5h4v5" />
+  </>
+);
+
 export const MailIcon = make(
   "MailIcon",
   <>

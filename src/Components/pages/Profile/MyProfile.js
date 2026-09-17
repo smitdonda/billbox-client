@@ -3,31 +3,28 @@ import { toast } from "sonner";
 
 import PageHeader from "../../ui/PageHeader";
 import { Button } from "../../ui/Button";
+import SectionCard from "../../ui/SectionCard";
+import cn from "../../ui/cn";
 import {
   PencilIcon,
   PlusIcon,
-  BuildingIcon,
-  MailIcon,
-  PhoneIcon,
   MapPinIcon,
-  InboxIcon,
+  ReceiptIcon,
+  StoreIcon,
 } from "../../ui/Icons";
 import axiosInstance, { errorMessage } from "../../../config/AxiosInstance";
+import { LAYOUT, LetterheadPreview, ProfileSkeleton } from "./shared";
 
-function DetailRow({ icon: Icon, label, value }) {
+// one saved value, in the same spot as its field on the edit form
+function Detail({ label, value, className }) {
+  const shown = String(value ?? "").trim();
+
   return (
-    <div className="flex items-start gap-3 py-3.5">
-      <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-line bg-bg text-muted">
-        <Icon size={15} />
-      </span>
-      <div className="min-w-0">
-        <dt className="text-[12px] font-medium uppercase tracking-wide text-faint">
-          {label}
-        </dt>
-        <dd className="mt-0.5 break-words text-sm text-fg">
-          {value || <span className="text-faint">Not set</span>}
-        </dd>
-      </div>
+    <div className={cn("min-w-0 rounded-xl bg-bg px-4 py-3", className)}>
+      <dt className="text-[12px] font-medium text-faint">{label}</dt>
+      <dd className="mt-0.5 break-words text-sm font-semibold text-fg">
+        {shown || <span className="font-normal text-faint">Not set</span>}
+      </dd>
     </div>
   );
 }
@@ -58,97 +55,97 @@ function MyProfile() {
     };
   }, []);
 
-  const editTarget = "/profileform";
-
   return (
     <>
       <PageHeader
         title="Company"
-        description="These details are printed on every invoice you generate."
+        description="Printed as the letterhead on every invoice."
         actions={
-          !loading && (
-            <Button
-              to={editTarget}
-              icon={profile ? PencilIcon : PlusIcon}
-              variant={profile ? "secondary" : "primary"}
-            >
-              {profile ? "Edit details" : "Add details"}
+          // with no profile yet, the empty card has the button instead
+          !loading &&
+          profile && (
+            <Button to="/profileform" variant="secondary" icon={PencilIcon}>
+              Edit details
             </Button>
           )
         }
       />
 
       {loading ? (
-        <div className="card space-y-4 p-6">
-          <div className="skeleton h-7 w-52" />
-          <div className="skeleton h-4 w-72" />
-          <div className="skeleton h-32 w-full" />
-        </div>
-      ) : !profile ? (
-        <div className="card flex flex-col items-center gap-3 px-6 py-16 text-center">
-          <span className="flex h-12 w-12 items-center justify-center rounded-2xl border border-line bg-elevated text-faint">
-            <InboxIcon size={22} />
-          </span>
-          <div>
-            <p className="font-medium text-fg">No company details yet</p>
-            <p className="mt-1 max-w-sm text-[13px] text-muted">
-              Add your business name, address and GST contact so invoices print
-              with the right letterhead.
-            </p>
-          </div>
-          <Button to="/profileform" size="sm" icon={PlusIcon}>
-            Add details
-          </Button>
-        </div>
+        <ProfileSkeleton />
       ) : (
-        <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-          <section className="card p-6 lg:col-span-1">
-            <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-accent text-accent-fg">
-              <BuildingIcon size={26} />
-            </span>
-            <h2 className="mt-4 text-xl font-semibold tracking-tight text-fg">
-              {profile.companyname || "Unnamed company"}
-            </h2>
-            {profile.cemail && (
-              <p className="mt-1 break-words text-sm text-muted">
-                {profile.cemail}
-              </p>
-            )}
-            <Button
-              to={editTarget}
-              variant="secondary"
-              size="sm"
-              icon={PencilIcon}
-              className="mt-5 w-full"
-            >
-              Edit details
-            </Button>
-          </section>
+        <div className={LAYOUT}>
+          <div className="min-w-0 space-y-4">
+            {profile ? (
+              <>
+                <SectionCard
+                  icon={StoreIcon}
+                  tint="bg-warning/10 text-warning"
+                  title="Business"
+                  description="Trading name and contact details."
+                >
+                  <dl className="grid gap-3 sm:grid-cols-2">
+                    <Detail
+                      label="Company name"
+                      value={profile.companyname}
+                      className="sm:col-span-2"
+                    />
+                    <Detail label="Email" value={profile.cemail} />
+                    <Detail label="Phone" value={profile.phone} />
+                  </dl>
+                </SectionCard>
 
-          <section className="card p-6 lg:col-span-2">
-            <h3 className="text-base font-semibold tracking-tight text-fg">
-              Details
-            </h3>
-            <dl className="mt-2 divide-y divide-line">
-              <DetailRow
-                icon={MapPinIcon}
-                label="Address"
-                value={profile.address}
-              />
-              <DetailRow
-                icon={MapPinIcon}
-                label="City / State"
-                value={[profile.city, profile.state].filter(Boolean).join(", ")}
-              />
-              <DetailRow
-                icon={MapPinIcon}
-                label="PIN code"
-                value={profile.pinno}
-              />
-              <DetailRow icon={PhoneIcon} label="Phone" value={profile.phone} />
-              <DetailRow icon={MailIcon} label="Email" value={profile.cemail} />
-            </dl>
-          </section>
+                <SectionCard
+                  icon={MapPinIcon}
+                  tint="bg-accent/10 text-accent"
+                  title="Address"
+                  description="Where your business is based."
+                >
+                  <dl className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                    <Detail
+                      label="Street address"
+                      value={profile.address}
+                      className="col-span-2 sm:col-span-3"
+                    />
+                    <Detail
+                      label="City"
+                      value={profile.city}
+                      className="col-span-2 sm:col-span-1"
+                    />
+                    <Detail label="State" value={profile.state} />
+                    <Detail label="PIN code" value={profile.pinno} />
+                  </dl>
+                </SectionCard>
+              </>
+            ) : (
+              <section className="card flex flex-col items-center px-6 py-14 text-center">
+                <span className="badge h-14 w-14 bg-warning/10 text-warning">
+                  <StoreIcon size={26} strokeWidth={1.9} />
+                </span>
+                <h2 className="mt-4 font-display text-lg font-semibold tracking-tight text-fg">
+                  No company details yet
+                </h2>
+                <p className="mt-1.5 max-w-sm text-[13.5px] text-muted">
+                  Add your business name, address and contact details so every
+                  invoice prints with the right letterhead.
+                </p>
+                <Button to="/profileform" icon={PlusIcon} className="mt-6">
+                  Add details
+                </Button>
+              </section>
+            )}
+          </div>
+
+          <aside className="xl:sticky xl:top-24">
+            <SectionCard
+              icon={ReceiptIcon}
+              tint="bg-violet/10 text-violet"
+              title="Invoice preview"
+              description="Top of every invoice."
+            >
+              <LetterheadPreview values={profile || {}} />
+            </SectionCard>
+          </aside>
         </div>
       )}
     </>
