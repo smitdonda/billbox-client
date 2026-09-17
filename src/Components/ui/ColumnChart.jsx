@@ -17,13 +17,7 @@ const MONTHS = [
   "Dec",
 ];
 
-/*
- * Billing per month. The last column is always the current month, so it is
- * the one drawn solid — everything to its left is finished business.
- *
- * A month with no bills still gets its column from the API, otherwise a quiet
- * month would silently shift every other bar along the axis.
- */
+// Monthly sales chart, the last column is the current month
 function ColumnChart({ data = [], loading = false }) {
   if (loading) {
     return (
@@ -66,8 +60,7 @@ function ColumnChart({ data = [], loading = false }) {
     >
       {data.map((row, i) => {
         const current = i === data.length - 1;
-        /* A month with a little billing still has to be visibly a bar, not a
-           line sitting on the axis. */
+        // minimum height so small values are still visible
         const height = row.total ? Math.max(4, (row.total / max) * 100) : 1.5;
 
         return (

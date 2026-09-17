@@ -1,9 +1,6 @@
 import React from "react";
 
-/**
- * Inline stroke icons (24x24) so the app carries no icon dependency and
- * every glyph inherits `currentColor` from its surroundings.
- */
+// Stroke icons (24x24), they use the current text colour
 const make = (displayName, paths) => {
   const Comp = ({ size = 20, className = "", strokeWidth = 1.75, ...rest }) => (
     <svg
@@ -64,20 +61,12 @@ export const ReceiptIcon = make(
   </>
 );
 
-/**
- * The BillBox mark: an isometric carton, its three faces one colour at three
- * weights. Filled rather than stroked and drawn on a 48 grid, so it is the
- * one glyph here that does not come from `make` — and it is the same geometry
- * the loader animates, so the logo and the waiting state are one object.
- */
+// BillBox logo (same shape as the loader in Loader.jsx)
 export const CrateIcon = ({ size = 20, className = "", ...rest }) => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
     width={size}
     height={size}
-    /* Cropped to the artwork rather than the loader's 48 box, which carried
-       room for the lift animation — inside a badge that padding read as a
-       mark two sizes too small. */
     viewBox="6.5 2.7 35 35"
     fill="currentColor"
     className={`shrink-0 ${className}`}
@@ -139,7 +128,6 @@ export const ChevronDownIcon = make(
   "ChevronDownIcon",
   <path d="m6 9 6 6 6-6" />
 );
-export const ChevronUpIcon = make("ChevronUpIcon", <path d="m18 15-6-6-6 6" />);
 
 export const ChevronsLeftIcon = make(
   "ChevronsLeftIcon",
@@ -256,16 +244,6 @@ export const FileTextIcon = make(
   </>
 );
 
-export const SortIcon = make(
-  "SortIcon",
-  <>
-    <path d="M7 4v16" />
-    <path d="m4 7 3-3 3 3" />
-    <path d="M17 20V4" />
-    <path d="m14 17 3 3 3-3" />
-  </>
-);
-
 export const AlertTriangleIcon = make(
   "AlertTriangleIcon",
   <>
@@ -280,14 +258,6 @@ export const InboxIcon = make(
   <>
     <path d="M22 12h-6l-2 3h-4l-2-3H2" />
     <path d="M5.5 5.1 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.5-6.9A2 2 0 0 0 16.8 4H7.2a2 2 0 0 0-1.7 1.1z" />
-  </>
-);
-
-export const WalletIcon = make(
-  "WalletIcon",
-  <>
-    <path d="M19 7V5a2 2 0 0 0-2-2H5a2 2 0 0 0 0 4h14a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5" />
-    <path d="M17.5 13h.01" />
   </>
 );
 
@@ -339,27 +309,11 @@ export const ArrowUpIcon = make(
   </>
 );
 
-export const ArrowDownIcon = make(
-  "ArrowDownIcon",
-  <>
-    <path d="M12 4v16" />
-    <path d="m6 14 6 6 6-6" />
-  </>
-);
-
 export const LayersIcon = make(
   "LayersIcon",
   <>
     <path d="m12 2.5 9 4.75-9 4.75-9-4.75Z" />
     <path d="m3 12 9 4.75L21 12" />
     <path d="m3 16.75 9 4.75 9-4.75" />
-  </>
-);
-
-export const TrendingUpIcon = make(
-  "TrendingUpIcon",
-  <>
-    <path d="m3 16 5.5-5.5 3.5 3.5L21 5" />
-    <path d="M15 5h6v6" />
   </>
 );

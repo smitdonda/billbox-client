@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { CopyIcon, CheckIcon } from "./Icons";
 
-/** A value that copies itself when clicked — GST numbers, mostly. */
+// Click to copy (used for GST numbers)
 function CopyValue({ value }) {
   const [copied, setCopied] = useState(false);
 
@@ -19,7 +19,7 @@ function CopyValue({ value }) {
       await navigator.clipboard.writeText(String(value));
       setCopied(true);
     } catch {
-      /* clipboard blocked (insecure origin) — leave the value selectable */
+      // clipboard not available
     }
   };
 

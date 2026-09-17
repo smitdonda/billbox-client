@@ -4,7 +4,6 @@ on:
   push:
     branches: [main]
   pull_request:
-  # So a red main can be re-checked without an empty commit.
   workflow_dispatch:
 
 jobs:
@@ -16,15 +15,10 @@ jobs:
 
       - uses: actions/setup-node@v7
         with:
-          # package.json declares >=20, which Vercel resolves to its newest
-          # supported major: 24.x today. Kept in step so CI builds on the same
-          # Node the deployment does; move it when Vercel's build log moves.
+          # same Node version as the Vercel build
           node-version: "24.x"
           cache: npm
 
-      # ci, not install: it installs exactly the lockfile and fails loudly if
-      # package.json and the lock have drifted apart. That drift is what breaks
-      # a deployment build after a dependency change lands without the lock.
       - run: npm ci
 
       - name: Check formatting
@@ -33,8 +27,6 @@ jobs:
       - name: Lint
         run: npm run lint
 
-      # CI=true turns warnings into errors, so an unused import cannot reach a
-      # deployment. This is the same build Vercel runs.
       - name: Build
         run: npm run build
         env:
@@ -53,8 +45,6 @@ jobs:
 
       - run: npm ci
 
-      # Only chromium: both projects are Chromium, one of them wearing a
-      # Pixel 7. --with-deps pulls the system libraries the runner lacks.
       - name: Install Playwright browser
         run: npx playwright install --with-deps chromium
 
@@ -63,11 +53,6 @@ jobs:
         env:
           CI: true
 
-      # The server is started here rather than by Playwright so the run has
-      # nothing to tear down at the end: the job ends, the runner goes away.
-      # It serves ./build, so the tests measure the bundle the deployment
-      # ships. Nothing answers /api behind it, and nothing has to — the tests
-      # stub the two routes the login page calls.
       - name: Serve the build
         run: |
           npx serve --single --listen 3000 build &

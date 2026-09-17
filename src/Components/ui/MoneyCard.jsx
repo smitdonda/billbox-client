@@ -3,12 +3,6 @@ import { Link } from "react-router-dom";
 import cn from "./cn";
 import { shortMoney } from "./format";
 
-/*
- * The two figures the dashboard leads with. They sit forward of everything
- * else on the page — heavier shadow, bigger type, a colour of their own — so
- * that the first thing read is money rather than a row of equal-weight tiles.
- */
-
 const TONES = {
   success: {
     badge: "bg-success/10 text-success",
@@ -22,6 +16,7 @@ const TONES = {
   },
 };
 
+// Big amount card at the top of the dashboard
 function MoneyCard({
   label,
   value,

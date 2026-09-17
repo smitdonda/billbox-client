@@ -25,13 +25,7 @@ const EMPTY = {
   gst: [],
 };
 
-/**
- * Line total before tax, plus each tax slab applied to it.
- *
- * `unitPaise` is already whole paise, so every amount out of here is a whole
- * number too — the same arithmetic the server does, which is what keeps this
- * preview from disagreeing with what gets saved.
- */
+// same calculation as the API (utils/billing.js), amounts in paise
 const priceLine = (unitPaise, quantity, gst) => {
   const qty = Math.max(0, Math.trunc(Number(quantity) || 0));
   const pandqtotal = unitPaise * qty;
@@ -43,11 +37,7 @@ const priceLine = (unitPaise, quantity, gst) => {
   return { pandqtotal, taxes, gsttex };
 };
 
-/**
- * Add or edit one bill line.
- * `maxQtyFor` returns how many units this bill may claim for a product —
- * live stock, plus whatever this bill already reserved before editing.
- */
+// Add or edit a product line on the bill
 function ProductsModal({
   open,
   onClose,
@@ -95,8 +85,7 @@ function ProductsModal({
 
   const maxQty = values.productId ? maxQtyFor(values.productId) : 0;
   const quantity = Number(values.quantity);
-  // The field holds rupees, because that is what a person types. Everything
-  // downstream of this line is whole paise.
+  // price is typed in rupees
   const unitPaise = toPaise(values.unitprice);
   const { pandqtotal, taxes, gsttex } = priceLine(
     unitPaise,
@@ -239,7 +228,7 @@ function ProductsModal({
           touched={touched.gst}
         />
 
-        {/* live line summary */}
+        {/* line total preview */}
         <div className="rounded-xl border border-line bg-bg p-3.5">
           <dl className="space-y-1.5 text-sm">
             <div className="flex items-center justify-between">

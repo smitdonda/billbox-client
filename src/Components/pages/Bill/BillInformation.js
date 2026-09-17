@@ -14,8 +14,7 @@ import { PlusIcon, PencilIcon, TrashIcon, FileTextIcon } from "../../ui/Icons";
 import useServerTable from "../../../hooks/useServerTable";
 import axiosInstance, { errorMessage } from "../../../config/AxiosInstance";
 
-/* The first line item and a count of the rest, so every row stays one line
-   tall. The rest are named in the tooltip and listed on the invoice. */
+// first product + "+N" for the rest (names in the tooltip)
 function ItemChips({ items = [] }) {
   if (!items.length) return <span className="text-faint">—</span>;
   const [first, ...others] = items;
@@ -95,25 +94,19 @@ function BillInformation() {
             </div>
           </div>
         ),
-        searchValue: (row) =>
-          `${row.name || ""} ${row.id ?? ""} ${row.gstNo || ""}`,
       },
       {
         key: "products",
         header: "Items",
         sortable: false,
         wide: true,
-        searchValue: (row) =>
-          (row.products || []).map((p) => p.productname).join(" "),
         cell: ({ value }) => <ItemChips items={value || []} />,
       },
       {
-        // A bill to a GST-registered business is B2B, anything else B2C —
-        // the split a GST return is filed in.
+        // customer with a GST number = B2B, without = B2C
         key: "gstNo",
         header: "Type",
         sortable: false,
-        searchable: false,
         cell: ({ value }) =>
           value ? (
             <StatusPill
@@ -176,8 +169,6 @@ function BillInformation() {
         }
         toolbar={
           meta.total > 0 && (
-            /* Summed in the database over every matching bill. Adding it up
-               here meant downloading all of them first. */
             <span className="text-[13px] tabular-nums text-muted">
               {number(meta.total)} {meta.total === 1 ? "bill" : "bills"} ·{" "}
               <span className="font-medium text-fg">

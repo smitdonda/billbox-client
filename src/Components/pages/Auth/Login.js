@@ -21,8 +21,6 @@ function Login() {
   const handleSubmit = async (values) => {
     try {
       setLoading(true);
-      // The server sets an httpOnly cookie; nothing about the session is
-      // stored here, so there is no token to hold on to.
       await login(values);
       navigate("/", { replace: true });
     } catch (error) {

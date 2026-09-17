@@ -58,7 +58,7 @@ function CustomersFrom({ id, open, handleClose, editData, customerData }) {
     onSubmit: handleSubmit,
   });
 
-  // Reset happens on close rather than on submit, so a failed save keeps input.
+  // reset on close, so the input is kept if saving fails
   const close = () => {
     formik.resetForm();
     handleClose();
@@ -128,7 +128,7 @@ function CustomersFrom({ id, open, handleClose, editData, customerData }) {
             required
           />
         </div>
-        {/* Enter should submit even though the button lives in the footer. */}
+        {/* hidden submit button so Enter works */}
         <button
           type="submit"
           className="hidden"

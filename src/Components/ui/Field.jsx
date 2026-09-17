@@ -8,10 +8,7 @@ const controlBase =
   "hover:border-strong focus:outline-none focus:border-fg focus:ring-2 focus:ring-fg/15 " +
   "disabled:cursor-not-allowed disabled:bg-elevated disabled:text-muted";
 
-/**
- * Labelled text control with inline validation.
- * `error` is rendered only once `touched` is true, matching Formik's flow.
- */
+// Input with label and error message. The error shows once the field is touched.
 function Field({
   label,
   name,
@@ -21,7 +18,6 @@ function Field({
   hint,
   icon: Icon,
   className = "",
-  inputClassName = "",
   required,
   ...rest
 }) {
@@ -62,8 +58,7 @@ function Field({
             Icon && "pl-10",
             isPassword && "pr-11",
             showError &&
-              "border-danger focus:border-danger focus:ring-danger/20",
-            inputClassName
+              "border-danger focus:border-danger focus:ring-danger/20"
           )}
           {...rest}
         />
@@ -90,7 +85,6 @@ function Field({
   );
 }
 
-/** Formik-aware wrapper: pass the formik bag and the field name. */
 function FormikField({ formik, name, ...rest }) {
   return (
     <Field

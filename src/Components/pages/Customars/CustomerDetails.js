@@ -87,11 +87,7 @@ function CustomerDetails() {
             </div>
           </div>
         ),
-        searchValue: (row) => `${row.name || ""} ${row.email || ""}`,
       },
-      // Searchable server-side, but not indexed for ordering — offering a
-      // sort the database cannot back would just be slow and occasionally
-      // fail on a large list.
       {
         key: "phoneNo",
         header: "Phone",
@@ -161,8 +157,6 @@ function CustomerDetails() {
         }
         toolbar={
           meta.total > 0 && (
-            /* Both counts cover every customer the search matches, not just
-               the page on screen. */
             <span className="text-[13px] tabular-nums text-muted">
               {number(meta.total)} {meta.total === 1 ? "customer" : "customers"}{" "}
               ·{" "}

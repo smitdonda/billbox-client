@@ -35,11 +35,7 @@ const schema = yup.object({
     .required("Phone number is required"),
 });
 
-/*
- * There is one company profile per account, so this form has no id: it always
- * loads whatever the account has (nothing, the first time) and always saves to
- * the same place. The "add" and "edit" cases differ in wording only.
- */
+// Same form for adding and editing, there is only one profile per account
 function ProfileForm() {
   const navigate = useNavigate();
 
@@ -85,8 +81,6 @@ function ProfileForm() {
     onSubmit: async (values) => {
       try {
         setSaving(true);
-        // One profile per account, so saving it is the same request whether it
-        // is the first time or the tenth.
         const res = await axiosInstance.put("/profile", values);
 
         if (res?.data?.success) {
@@ -106,9 +100,6 @@ function ProfileForm() {
   return (
     <>
       <PageHeader
-        // Whether this is the first save is not known until the profile has
-        // loaded, so the heading stays neutral rather than saying "Add" and
-        // then correcting itself a moment later.
         title={
           loading
             ? "Company details"

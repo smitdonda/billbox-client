@@ -8,37 +8,24 @@ import React, {
 } from "react";
 import axiosInstance, { setUnauthorizedHandler } from "../config/AxiosInstance";
 
-/*
- * Who is signed in, for the whole app.
- *
- * The session token used to sit in a cookie this code could read, so "am I
- * signed in?" was answered by looking for it. It is httpOnly now — invisible
- * to every script on the page, which is the point — so the question is asked
- * of the server once at boot, and the answer is kept here.
- */
 const AuthContext = createContext(null);
-
-/** "loading" until the first /me answers; then "authenticated" or "anonymous". */
-const LOADING = "loading";
-const AUTHENTICATED = "authenticated";
-const ANONYMOUS = "anonymous";
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
-  const [status, setStatus] = useState(LOADING);
+  const [loading, setLoading] = useState(true);
 
   const clear = useCallback(() => {
     setUser(null);
-    setStatus(ANONYMOUS);
+    setLoading(false);
   }, []);
 
-  // A 401 on any ordinary request means the cookie expired or was revoked
-  // mid-session. One place decides what that means.
+  // log out if any request comes back with 401
   useEffect(() => {
     setUnauthorizedHandler(clear);
     return () => setUnauthorizedHandler(null);
   }, [clear]);
 
+  // the cookie is httpOnly, so ask the server if we are logged in
   useEffect(() => {
     let cancelled = false;
 
@@ -48,12 +35,11 @@ export function AuthProvider({ children }) {
         if (cancelled) return;
         if (res.data?.success && res.data.data) {
           setUser(res.data.data);
-          setStatus(AUTHENTICATED);
+          setLoading(false);
           return;
         }
         clear();
       } catch {
-        // 401 here is the ordinary "no session" answer, not a failure.
         if (!cancelled) clear();
       }
     })();
@@ -69,17 +55,15 @@ export function AuthProvider({ children }) {
       throw new Error(res.data?.message || "Could not sign you in");
     }
     setUser(res.data.data);
-    setStatus(AUTHENTICATED);
+    setLoading(false);
     return res.data.data;
   }, []);
 
   const logout = useCallback(async () => {
     try {
-      // Only the server can delete an httpOnly cookie.
       await axiosInstance.post("/auth/logout");
     } catch {
-      // Already expired, or the network is down. Either way this session is
-      // over as far as the app is concerned.
+      // ignore, log out locally anyway
     }
     clear();
   }, [clear]);
@@ -87,13 +71,12 @@ export function AuthProvider({ children }) {
   const value = useMemo(
     () => ({
       user,
-      status,
-      isAuthenticated: status === AUTHENTICATED,
-      isLoading: status === LOADING,
+      isAuthenticated: Boolean(user),
+      isLoading: loading,
       login,
       logout,
     }),
-    [user, status, login, logout]
+    [user, loading, login, logout]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

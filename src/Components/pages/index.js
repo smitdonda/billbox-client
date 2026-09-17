@@ -1,7 +1,7 @@
 import React, { Suspense, lazy } from "react";
 import { Route, Routes, Navigate, Outlet } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
-import { BlockLoader, PageLoader } from "../ui/Spinner";
+import { BlockLoader, PageLoader } from "../ui/Loader";
 import AppShell from "../layout/AppShell";
 import Home from "./Dashboard/Home";
 import CustomerDetails from "./Customars/CustomerDetails";
@@ -13,18 +13,14 @@ import ProfileForm from "./Profile/ProfileForm";
 import Login from "./Auth/Login";
 import SignUp from "./Auth/SignUp";
 
-// jsPDF and html2canvas are ~250 kB gzipped between them and are only needed
-// on the invoice screen, so that route pulls them in on demand.
+// the PDF libraries are big, so load the invoice page only when needed
 const BillTable = lazy(() => import("./Bill/BillTable"));
 
-/** Login and sign-up: bounce signed-in visitors back to the dashboard. */
 function PublicOnly() {
   const { isAuthenticated } = useAuth();
   return isAuthenticated ? <Navigate to="/" replace /> : <Outlet />;
 }
 
-/** Everything else. The session lives in context, so a logout or an expiry
- *  picked up by the axios interceptor takes effect on the next render. */
 function RequireAuth() {
   const { isAuthenticated } = useAuth();
   return isAuthenticated ? <AppShell /> : <Navigate to="/login" replace />;
@@ -33,9 +29,6 @@ function RequireAuth() {
 function Router() {
   const { isLoading } = useAuth();
 
-  /* The session cookie is httpOnly, so whether someone is signed in is only
-     known once the server has answered. Rendering routes before that would
-     flash the login page at a signed-in user on every reload. */
   if (isLoading) return <PageLoader label="Loading your books..." />;
 
   return (
@@ -55,13 +48,6 @@ function Router() {
           <Route path="/billtable/:id" element={<BillTable />} />
           <Route path="/myprofile" element={<MyProfile />} />
           <Route path="/profileform" element={<ProfileForm />} />
-          {/* The company profile is a singleton and its form lost the id in
-              the path. Old links — /profileform/new, /profileform/<id> —
-              still land on it rather than bouncing to the dashboard. */}
-          <Route
-            path="/profileform/*"
-            element={<Navigate to="/profileform" replace />}
-          />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>
       </Routes>

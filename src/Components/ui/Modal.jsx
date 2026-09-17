@@ -6,14 +6,13 @@ import { IconButton } from "./Button";
 const SIZES = {
   sm: "max-w-sm",
   md: "max-w-lg",
-  lg: "max-w-2xl",
-  xl: "max-w-4xl",
 };
 
-/**
- * Centred dialog on >=sm, bottom sheet on phones.
- * Closes on Escape and on backdrop click; keeps focus inside while open.
- */
+const FIELDS =
+  "input:not([disabled]), select:not([disabled]), textarea:not([disabled]), " +
+  "button:not([disabled]):not([tabindex='-1'])";
+
+// Dialog in the centre on desktop, bottom sheet on phones
 function Modal({
   open,
   onClose,
@@ -22,11 +21,12 @@ function Modal({
   size = "md",
   footer,
   children,
-  className = "",
   closeOnBackdrop = true,
 }) {
   const panelRef = useRef(null);
+  const bodyRef = useRef(null);
 
+  // Escape closes, Tab stays inside the dialog
   const handleKeyDown = useCallback(
     (event) => {
       if (event.key === "Escape") {
@@ -53,18 +53,20 @@ function Modal({
     [onClose]
   );
 
-  // Lock the page behind the dialog and restore focus on close.
+  // lock page scroll while open and give focus back when closed
   useEffect(() => {
     if (!open) return undefined;
     const previouslyFocused = document.activeElement;
     const { overflow } = document.body.style;
     document.body.style.overflow = "hidden";
 
+    // data-autofocus field first, then the first field, then the close button
     const timer = window.setTimeout(() => {
-      const target = panelRef.current?.querySelector(
-        "[data-autofocus], input, select, textarea, button"
-      );
-      target?.focus?.();
+      const target =
+        panelRef.current?.querySelector("[data-autofocus]") ||
+        bodyRef.current?.querySelector(FIELDS) ||
+        panelRef.current?.querySelector("button");
+      target?.focus();
     }, 30);
 
     return () => {
@@ -94,8 +96,7 @@ function Modal({
           "relative z-10 w-full bg-surface border border-line shadow-pop animate-scale-in",
           "rounded-t-2xl sm:rounded-2xl max-h-[92vh] sm:max-h-[88vh] flex flex-col",
           "mx-0 sm:mx-4",
-          SIZES[size] || SIZES.md,
-          className
+          SIZES[size] || SIZES.md
         )}
       >
         {(title || onClose) && (
@@ -116,7 +117,10 @@ function Modal({
           </div>
         )}
 
-        <div className="flex-1 overflow-y-auto overscroll-contain px-5 py-5">
+        <div
+          ref={bodyRef}
+          className="flex-1 overflow-y-auto overscroll-contain px-5 py-5"
+        >
           {children}
         </div>
 

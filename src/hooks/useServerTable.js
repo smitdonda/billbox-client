@@ -2,55 +2,43 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import axiosInstance, { errorMessage } from "../config/AxiosInstance";
 
-const EMPTY_META = { page: 1, limit: 8, total: 0, pageCount: 1 };
+const PAGE_SIZE = 8;
+const EMPTY_META = { page: 1, limit: PAGE_SIZE, total: 0, pageCount: 1 };
 
-/**
- * One page of a list endpoint, with the search, sort and paging state that
- * asks for it.
- *
- * The screens used to pull an entire collection and filter it in the browser,
- * which is fine at fifty rows and hopeless at fifty thousand. Searching,
- * sorting and paging now happen in the database; this hook is the thin piece
- * that keeps the query string and the table in step.
- *
- * Every list endpoint answers in the same envelope — rows under `data`, paging
- * under `meta` — so there is nothing per-screen left to configure.
- */
+// Loads one page of a list endpoint. Search, sort and paging are done
+// by the API.
 export default function useServerTable({
   url,
-  initialPageSize = 8,
   initialSort = null,
   errorText = "Could not load the data",
 }) {
   const [rows, setRows] = useState([]);
-  const [meta, setMeta] = useState({ ...EMPTY_META, limit: initialPageSize });
+  const [meta, setMeta] = useState(EMPTY_META);
   const [loading, setLoading] = useState(true);
 
-  // Page is zero-based here to match the table component.
+  // zero-based, the API page is page + 1
   const [page, setPage] = useState(0);
-  const [pageSize, setPageSize] = useState(initialPageSize);
+  const [pageSize, setPageSize] = useState(PAGE_SIZE);
   const [query, setQuery] = useState("");
   const [search, setSearch] = useState("");
   const [sort, setSort] = useState(initialSort || { key: null, dir: "asc" });
 
-  // Typing should not fire a request per keystroke.
+  // debounce the search input
   useEffect(() => {
     const timer = setTimeout(() => setSearch(query.trim()), 300);
     return () => clearTimeout(timer);
   }, [query]);
 
-  // A new search or page size starts again from the first page.
   useEffect(() => {
     setPage(0);
   }, [search, pageSize]);
 
-  /* Responses can arrive out of order — a slow page 1 landing after a quick
-     page 2 would show the wrong rows. Only the newest request may write. */
+  // ignore responses from older requests
   const latest = useRef(0);
 
   const load = useCallback(async () => {
-    const ticket = latest.current + 1;
-    latest.current = ticket;
+    const requestId = latest.current + 1;
+    latest.current = requestId;
 
     try {
       setLoading(true);
@@ -62,16 +50,16 @@ export default function useServerTable({
           ...(sort.key ? { sort: sort.key, dir: sort.dir } : {}),
         },
       });
-      if (ticket !== latest.current) return;
+      if (requestId !== latest.current) return;
 
       setRows(res.data?.data || []);
       setMeta(res.data?.meta || { ...EMPTY_META, limit: pageSize });
     } catch (error) {
-      if (ticket !== latest.current) return;
+      if (requestId !== latest.current) return;
       setRows([]);
       toast.error(errorMessage(error, errorText));
     } finally {
-      if (ticket === latest.current) setLoading(false);
+      if (requestId === latest.current) setLoading(false);
     }
   }, [url, page, pageSize, search, sort, errorText]);
 
@@ -79,13 +67,12 @@ export default function useServerTable({
     load();
   }, [load]);
 
-  // Deleting the last row of the last page would otherwise strand the pager
-  // past the end of the data.
+  // go back a page if the current one is now past the end (e.g. after a delete)
   useEffect(() => {
     if (page > 0 && page > meta.pageCount - 1) setPage(meta.pageCount - 1);
   }, [meta.pageCount, page]);
 
-  /** The bundle <DataTable server={...}> expects. */
+  // props for <DataTable server={...}>
   const server = useMemo(
     () => ({
       total: meta.total,

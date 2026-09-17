@@ -2,25 +2,17 @@ import React, { useEffect, useId, useMemo, useRef, useState } from "react";
 import cn from "./cn";
 import { ChevronDownIcon, CheckIcon, SearchIcon } from "./Icons";
 
-/**
- * Single-choice dropdown with type-ahead filtering.
- * Options are `{ value, label, hint }`; `value` is compared with `===`.
- */
+// Dropdown with a search box. Options are { value, label, hint }.
 function Select({
   label,
   value,
   onChange,
   options = [],
   placeholder = "Select...",
-  searchable = true,
   searchPlaceholder = "Search...",
   emptyText = "No matches",
   error,
   touched,
-  disabled,
-  className = "",
-  buttonClassName = "",
-  align = "left",
 }) {
   const id = useId();
   const [open, setOpen] = useState(false);
@@ -60,7 +52,7 @@ function Select({
   const selected = options.find((opt) => opt.value === value);
 
   return (
-    <div className={cn("flex flex-col gap-1.5", className)} ref={wrapRef}>
+    <div className="flex flex-col gap-1.5" ref={wrapRef}>
       {label && (
         <label htmlFor={id} className="text-[13px] font-medium text-muted">
           {label}
@@ -71,17 +63,14 @@ function Select({
         <button
           id={id}
           type="button"
-          disabled={disabled}
           aria-haspopup="listbox"
           aria-expanded={open}
           onClick={() => setOpen((v) => !v)}
           className={cn(
             "flex h-11 w-full items-center justify-between gap-2 rounded-xl border bg-surface px-3.5 text-sm",
-            "transition-[border-color,box-shadow] duration-150 focus-ring",
-            "hover:border-strong disabled:cursor-not-allowed disabled:bg-elevated disabled:text-muted",
+            "transition-[border-color,box-shadow] duration-150 focus-ring hover:border-strong",
             showError ? "border-danger" : "border-line",
-            open && "border-fg ring-2 ring-fg/15",
-            buttonClassName
+            open && "border-fg ring-2 ring-fg/15"
           )}
         >
           <span className={cn("truncate", !selected && "text-faint")}>
@@ -97,27 +86,20 @@ function Select({
         </button>
 
         {open && (
-          <div
-            className={cn(
-              "absolute z-40 mt-1.5 w-full min-w-[13rem] overflow-hidden rounded-xl border border-line bg-surface shadow-pop animate-scale-in",
-              align === "right" && "right-0"
-            )}
-          >
-            {searchable && (
-              <div className="relative border-b border-line">
-                <SearchIcon
-                  size={15}
-                  className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-faint"
-                />
-                <input
-                  ref={searchRef}
-                  value={query}
-                  onChange={(event) => setQuery(event.target.value)}
-                  placeholder={searchPlaceholder}
-                  className="h-10 w-full bg-transparent pl-9 pr-3 text-sm text-fg placeholder:text-faint focus:outline-none"
-                />
-              </div>
-            )}
+          <div className="absolute z-40 mt-1.5 w-full min-w-[13rem] overflow-hidden rounded-xl border border-line bg-surface shadow-pop animate-scale-in">
+            <div className="relative border-b border-line">
+              <SearchIcon
+                size={15}
+                className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-faint"
+              />
+              <input
+                ref={searchRef}
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+                placeholder={searchPlaceholder}
+                className="h-10 w-full bg-transparent pl-9 pr-3 text-sm text-fg placeholder:text-faint focus:outline-none"
+              />
+            </div>
 
             <ul role="listbox" className="max-h-60 overflow-y-auto p-1.5">
               {filtered.length === 0 && (

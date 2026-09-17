@@ -22,10 +22,6 @@ import {
   CrateIcon as BrandIcon,
 } from "../ui/Icons";
 
-/* Grouped so the rail reads as three jobs rather than one flat list of five.
-   Each entry carries its own hue: at a glance the rail is scanned by colour
-   rather than read word by word, which is what makes five near-identical grey
-   rows slow to use. */
 const NAV = [
   {
     title: "Overview",
@@ -85,8 +81,7 @@ const readCollapsed = () => {
   }
 };
 
-/* The collapsed rail has no room for a label, and the native title attribute
-   takes about a second to appear. This is the same hint, instantly. */
+// tooltip for the collapsed sidebar
 function Tip({ children }) {
   return (
     <span
@@ -102,21 +97,15 @@ function Tip({ children }) {
   );
 }
 
-/* Collapsing is one motion, so every piece of it moves on the same clock.
-   Nothing unmounts or flips to `hidden`: text shrinks its own width and fades,
-   and the icons ride a transform into the centre of the narrow rail. */
-/* An expo curve spends 95%% of its travel in the first fifth of the clock, so
-   the rail arrived before the eye caught it moving. This one spreads the
-   distance across the whole duration, which is what makes it read as motion. */
 const CURVE = "ease-[cubic-bezier(0.4,0,0.2,1)] motion-reduce:transition-none";
 const RAIL = `duration-[380ms] ${CURVE}`;
-/* Matches the drawer-out animation in tailwind.config.js. */
-const DRAWER_EXIT_MS = 200;
 const ITEM = `duration-[260ms] ${CURVE}`;
+// same length as the drawer-out animation in tailwind.config.js
+const DRAWER_EXIT_MS = 200;
+const ENTER = "animate-nav-in motion-reduce:animate-none";
 
-/* Every label and caption in the rail, top to bottom. Opening deals them out
-   in that order; closing takes them all at once, because a staggered exit just
-   reads as lag. */
+// position of each group title and link, used to delay the animations
+// so the items appear one after another
 const ORDER = (() => {
   const order = new Map();
   let i = 0;
@@ -127,18 +116,14 @@ const ORDER = (() => {
   return order;
 })();
 
+// labels appear one by one when expanding, all at once when collapsing
 const stagger = (collapsed, key) => ({
   transitionDelay: collapsed ? "0ms" : `${50 + (ORDER.get(key) ?? 0) * 26}ms`,
 });
 
-/* The entrance runs once, when the shell mounts, on the same order the labels
-   use — so the rail assembles top to bottom instead of appearing all at once.
-   It is animation, not transition, so a later collapse never replays it. */
 const entrance = (key) => ({
   animationDelay: `${(ORDER.get(key) ?? 0) * 45}ms`,
 });
-
-const ENTER = "animate-nav-in motion-reduce:animate-none";
 
 const labelMotion = (collapsed) =>
   cn(
@@ -148,9 +133,7 @@ const labelMotion = (collapsed) =>
     collapsed && "lg:ml-0 lg:max-w-0 lg:opacity-0"
   );
 
-/* px-3 inside a px-3 nav puts the badge's left edge 24px in; it is 30px wide,
-   so its centre sits at 39px. The rail is 72px, so pulling it 3px left lands
-   it exactly on centre. */
+// shift the icon 3px left so it is centred in the collapsed sidebar
 const iconMotion = (collapsed) =>
   cn(
     "h-[30px] w-[30px] shrink-0 transition-transform",
@@ -200,9 +183,6 @@ function NavItems({ collapsed, onNavigate }) {
             >
               {({ isActive }) => (
                 <>
-                  {/* The active row is already tinted; this is the edge that
-                      says which one it is from the collapsed rail, where the
-                      label is gone. It grows in on the row it lands on. */}
                   {isActive && (
                     <span
                       aria-hidden="true"
@@ -241,7 +221,6 @@ function NavItems({ collapsed, onNavigate }) {
 function Brand({ collapsed }) {
   return (
     <Link to="/" className="flex items-center rounded-xl px-3 py-1 focus-ring">
-      {/* A 36px mark sitting 24px in; -6px lands it on the rail's centre. */}
       <span
         className={cn(
           "flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-accent to-accent2 text-accent-fg shadow-soft",
@@ -272,14 +251,10 @@ function Brand({ collapsed }) {
   );
 }
 
-/**
- * App chrome: a rail that collapses on desktop and slides in as a drawer on
- * phones. All of it is React state — no direct DOM style writes.
- */
+// Layout for logged in pages: sidebar on desktop, drawer on mobile
 function AppShell() {
   const [drawerOpen, setDrawerOpen] = useState(false);
-  /* Unmounting on click would cut the exit animation off at frame one, so the
-     drawer is asked to close, plays its slide, and only then goes away. */
+  // keep the drawer mounted until its closing animation has finished
   const [drawerClosing, setDrawerClosing] = useState(false);
   const [collapsed, setCollapsed] = useState(readCollapsed);
   const { pathname } = useLocation();
@@ -293,7 +268,6 @@ function AppShell() {
     setDrawerOpen(true);
   }, []);
 
-  /* Kept in step with DRAWER_EXIT_MS below and the drawer-out keyframe. */
   useEffect(() => {
     if (!drawerClosing) return undefined;
     if (!drawerOpen) {
@@ -315,7 +289,7 @@ function AppShell() {
     try {
       window.localStorage.setItem(COLLAPSE_KEY, collapsed ? "1" : "0");
     } catch {
-      /* storage unavailable — the choice just won't survive a reload */
+      // localStorage not available
     }
   }, [collapsed]);
 
@@ -326,9 +300,6 @@ function AppShell() {
     return () => document.removeEventListener("keydown", onEsc);
   }, [drawerOpen, closeDrawer]);
 
-  /* Only the server can clear an httpOnly cookie, so signing out is a
-     request. The redirect happens either way — a failed call still ends the
-     session as far as this app is concerned. */
   const logOut = async () => {
     await logout();
     navigate("/login", { replace: true });
@@ -349,7 +320,7 @@ function AppShell() {
 
   return (
     <div className="min-h-screen bg-bg">
-      {/* ---- desktop sidebar ---- */}
+      {/* desktop sidebar */}
       <aside
         className={cn(
           "fixed inset-y-0 left-0 z-30 hidden shrink-0 flex-col border-r border-line bg-surface lg:flex",
@@ -364,7 +335,7 @@ function AppShell() {
         <div
           className={cn(
             "flex-1 py-5",
-            /* Clipping would cut the collapsed rail's tooltips in half. */
+            // overflow-visible so the tooltips are not cut off
             collapsed ? "overflow-visible" : "overflow-y-auto"
           )}
         >
@@ -400,7 +371,7 @@ function AppShell() {
         </div>
       </aside>
 
-      {/* ---- mobile drawer ---- */}
+      {/* mobile drawer */}
       {drawerOpen && (
         <div className="fixed inset-0 z-40 lg:hidden">
           <div
@@ -444,7 +415,7 @@ function AppShell() {
         </div>
       )}
 
-      {/* ---- main column ---- */}
+      {/* main content */}
       <div
         className={cn(
           "flex min-h-screen flex-col",
@@ -459,8 +430,6 @@ function AppShell() {
             onClick={openDrawer}
             className="lg:hidden"
           />
-          {/* Same corner as the phone menu button above: on desktop the rail is
-              already there, so this widens and narrows it instead. */}
           <button
             type="button"
             onClick={() => setCollapsed((v) => !v)}
@@ -476,9 +445,6 @@ function AppShell() {
               )}
             />
           </button>
-          {/* Phones get the bare section name. Desktop gets its group in front
-              of it, so the bar carries the one thing the page's own H1 cannot:
-              where this screen sits. */}
           <nav aria-label="Breadcrumb" className="min-w-0 flex-1">
             <span className="flex items-center gap-1.5 truncate text-[15px] font-semibold tracking-tight text-fg">
               {current?.group && (
@@ -491,8 +457,6 @@ function AppShell() {
             </span>
           </nav>
           <div className="flex items-center gap-2">
-            {/* The desktop rail carries its own log out, so this one stops at
-                the tablet range where the rail is still hidden. */}
             <button
               type="button"
               onClick={logOut}

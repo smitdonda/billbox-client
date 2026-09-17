@@ -2,44 +2,25 @@
 @tailwind components;
 @tailwind utilities;
 
-/* ------------------------------------------------------------------ */
-/*  Design tokens — Nordic Calm: cool, low-saturation neutrals under a  */
-/*  muted navy. Everything in the app reads through these thirteen      */
-/*  values, so a repaint never reaches a component.                     */
-/*  Values are raw RGB channels so Tailwind can apply <alpha-value>.   */
-/* ------------------------------------------------------------------ */
+/* Colour palette. Values are RGB channels so Tailwind can add opacity. */
 @layer base {
   :root {
     --bg: 244 246 248;
     --surface: 255 255 255;
-    /* A real step above `surface` — it is what hover fills, table headers and
-       the active nav item are painted with, so it must not equal white. */
     --elevated: 237 241 245;
     --line: 218 225 232;
     --strong: 196 206 217;
     --fg: 27 35 45;
     --muted: 82 95 110;
     --faint: 146 159 175;
-    /* The one saturated colour in the set, and the only thing that says
-       "act here". Deliberately desaturated so the numbers in a table stay
-       the loudest thing on screen. White on it reads 8.23:1. */
     --accent: 45 82 112;
     --accent-fg: 255 255 255;
-    /* Pulled toward the neutrals so a status chip does not shout over the
-       accent, while staying unmistakably green / amber / red. */
     --success: 39 119 92;
     --warning: 165 118 33;
     --danger: 173 57 57;
-    /* Amber for words. --warning is tuned for fills and borders; as 12px text
-       on its own 10% tint it reads 3.6:1, so a status pill's label takes this
-       darker step instead and reads 5.5:1. */
+    /* darker amber for text, so it is readable on a light background */
     --warning-ink: 128 91 23;
-    /* The lighter half of the dashboard header gradient. White on it reads
-       5.87:1, so the greeting and its figures clear AA. */
     --accent2: 58 106 132;
-    /* Three more hues at the accent's saturation, so the colour-coded tiles
-       and rail icons read as a set with it rather than as stickers on top.
-       All three clear 5.7:1 on white as icon strokes and chip text. */
     --violet: 92 76 138;
     --teal: 39 112 112;
     --rose: 150 70 100;
@@ -66,14 +47,12 @@
     *::after {
       animation-duration: 0.01ms !important;
       transition-duration: 0.01ms !important;
-      /* The sidebar stagger sets its delays inline, so cutting the duration
-         alone would still leave the wait. */
       animation-delay: 0.01ms !important;
       transition-delay: 0.01ms !important;
     }
   }
 
-  /* Kill the browser spinners on number inputs — quantities use our own. */
+  /* hide the arrows on number inputs */
   input[type="number"]::-webkit-outer-spin-button,
   input[type="number"]::-webkit-inner-spin-button {
     -webkit-appearance: none;
@@ -87,7 +66,6 @@
     @apply bg-fg text-bg;
   }
 
-  /* Scrollbars that read as part of the surface, not on top of it. */
   * {
     scrollbar-width: thin;
     scrollbar-color: rgb(var(--strong)) transparent;
@@ -120,13 +98,10 @@
     @apply bg-surface border border-line rounded-2xl shadow-card;
   }
 
-  /* The dashboard header. Its own gradient rather than a flat accent, because
-     a flat block of the accent at this size reads as an error banner. */
+  /* dashboard header */
   .band {
     @apply relative overflow-hidden bg-gradient-to-br from-accent to-accent2 text-accent-fg;
   }
-  /* Two soft discs bleeding off the right edge — enough to stop the gradient
-     reading as a plain rectangle, faint enough not to fight the text. */
   .band::after,
   .band::before {
     content: "";
@@ -139,8 +114,6 @@
     @apply bottom-[-9rem] right-28 h-64 w-64 bg-white/[0.07];
   }
 
-  /* Square icon badge. The hue is named by the caller — `bg-violet/10
-     text-violet` — because currentColor cannot take an alpha modifier. */
   .badge {
     @apply flex shrink-0 items-center justify-center rounded-xl;
   }
@@ -166,10 +139,7 @@
     }
   }
 
-  /* The crate mark. The light travels top, right, left and the box lifts
-     on a slower cycle than the faces, so the two never land together and
-     the loop does not tick. Frozen by the reduced-motion rule it settles on
-     its resting opacities, which is a readable box rather than a blank. */
+  /* loading logo (Loader.jsx) */
   .crate {
     overflow: visible;
   }
@@ -193,9 +163,7 @@
     animation: crate-light-left 1.35s ease-in-out infinite;
     animation-delay: 0.32s;
   }
-  /* Button size. The tiered tints are what give the box its form at 30px and
-     up; at 18px they average into one flat grey, so the small mark sits on
-     higher opacities and swings through a narrower range instead. */
+  /* small size (buttons) uses higher opacity so the shape stays visible */
   .crate-sm .crate-top {
     opacity: 0.95;
     animation-name: crate-light-top-sm;
@@ -277,59 +245,12 @@
       opacity: 0.85;
     }
   }
-
-  /* Loader motion. The spinner and the pulsing ring ride Tailwind's own
-     `animate-spin` and `animate-ping`; these three need their own timing.
-     All of them are stopped by the reduced-motion rule in the base layer. */
-  @keyframes loader-dot {
-    0%,
-    80%,
-    100% {
-      opacity: 0.3;
-      transform: translateY(0);
-    }
-    40% {
-      opacity: 1;
-      transform: translateY(-3px);
-    }
-  }
-  @keyframes loader-bar {
-    0%,
-    100% {
-      transform: scaleY(0.35);
-      opacity: 0.45;
-    }
-    50% {
-      transform: scaleY(1);
-      opacity: 1;
-    }
-  }
-  /* Runs edge to edge: the strip is a third of the track, so it leaves on
-     the right exactly as it would re-enter on the left. */
-  @keyframes loader-slide {
-    0% {
-      transform: translateX(-100%);
-    }
-    100% {
-      transform: translateX(300%);
-    }
-  }
 }
 
-/* ------------------------------------------------------------------ */
-/*  sonner — repainted with the token palette.                          */
-/* ------------------------------------------------------------------ */
-/*  sonner appends its stylesheet to <head> at runtime, so it always lands  */
-/*  after this file and wins every tie. Selectors that overwrite one of its  */
-/*  declarations are doubled to out-specify it outright; the custom          */
-/*  properties do not need that, because a value set on the toast itself     */
-/*  beats the one it would otherwise inherit from the toaster.              */
+/* Toasts (sonner). Some selectors are repeated to beat sonner's own styles,
+   which are added after this file. */
 [data-sonner-toaster][data-sonner-toaster] {
   font-family: inherit;
-  /*  Resolved once per toast and then reused by the rail, the icon and the  */
-  /*  timer bar, so a new type only needs the one line below. It is declared */
-  /*  up here on the toaster so the per-type rules override it by sitting on */
-  /*  the toast itself, rather than by out-specifying a neighbour.           */
   --toast-accent: rgb(var(--fg));
 }
 [data-sonner-toast][data-styled="true"][data-styled="true"] {
@@ -339,7 +260,6 @@
   --border-radius: 0.75rem;
   box-shadow: 0 10px 30px -12px rgb(0 0 0 / 0.28);
   font-size: 0.875rem;
-  /*  Room on the leading edge for the rail.                               */
   padding: 16px 16px 18px 20px;
 }
 [data-sonner-toast][data-type="success"] {
@@ -355,19 +275,7 @@
   color: var(--toast-accent);
 }
 
-/* ---- motion ---- */
-/*  sonner drives the entrance off an inline `--y` on the toast, so the     */
-/*  element's own transform is left untouched and everything below animates  */
-/*  the parts inside it instead.                                            */
-
-/*  Both decorations hang off [data-content], not off the toast itself: the  */
-/*  toast's own ::before and ::after are already taken — sonner uses them as */
-/*  the swipe hit-area and as the bridge that keeps the stack hovered across */
-/*  the gap between toasts. They anchor to the toast all the same, since     */
-/*  [data-content] is not positioned.                                        */
-
-/*  Rail down the leading edge. Inset rather than flush: the close button    */
-/*  overhangs the corner, so `overflow: hidden` here would behead it.       */
+/* coloured line on the left side of the toast */
 [data-sonner-toast] [data-content]::before {
   content: "";
   position: absolute;
@@ -380,8 +288,7 @@
   animation: toast-rail 420ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
-/*  Timer bar. The duration arrives as a custom property from <Toaster>, so  */
-/*  the bar and sonner's own dismissal clock run off the same number.       */
+/* timer bar, --toast-duration is set in App.js */
 [data-sonner-toast] [data-content]::after {
   content: "";
   position: absolute;
@@ -395,14 +302,11 @@
   transform-origin: left center;
   animation: toast-timer var(--toast-duration, 4000ms) linear both;
 }
-/*  sonner holds its timer while the stack is hovered or a toast is being   */
-/*  dragged away; the bar holds with it.                                    */
+/* pause the bar while hovering or swiping, like sonner pauses its timer */
 [data-sonner-toaster]:hover [data-sonner-toast] [data-content]::after,
 [data-sonner-toast][data-swiping="true"] [data-content]::after {
   animation-play-state: paused;
 }
-/*  A toast that waits on a promise or on a button press has no countdown   */
-/*  left to draw.                                                           */
 [data-sonner-toast][data-promise="true"] [data-content]::after {
   display: none;
 }
@@ -433,11 +337,7 @@
   transform: var(--toast-close-button-transform) scale(1.08);
 }
 
-/*  The button is drawn 20px across, which is fine to click and too small to
-    tap. On a touch pointer an invisible ::before widens the hit area to 44px
-    without moving or resizing anything on screen. The button is positioned,
-    so the pseudo-element measures from its own box; sonner puts nothing on
-    this ::before, unlike the toast's own, which it needs for swiping.        */
+/* bigger tap area for the close button on touch screens */
 @media (pointer: coarse) {
   [data-sonner-toast][data-styled="true"][data-styled="true"]
     [data-close-button]::before {
@@ -487,17 +387,13 @@
   }
 }
 
-/*  The global reduce-motion rule collapses every duration, which would      */
-/*  leave the timer bar already spent on screen — drop it there instead.    */
 @media (prefers-reduced-motion: reduce) {
   [data-sonner-toast] [data-content]::after {
     display: none;
   }
 }
 
-/* ------------------------------------------------------------------ */
-/*  Invoice export — html2canvas rasterises this, so keep it literal.   */
-/* ------------------------------------------------------------------ */
+/* invoice (plain colours so the PDF export looks right) */
 .invoice-sheet {
   background: #ffffff;
   color: #111111;

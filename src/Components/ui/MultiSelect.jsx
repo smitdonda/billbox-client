@@ -2,28 +2,23 @@ import React, { useEffect, useId, useRef, useState } from "react";
 import cn from "./cn";
 import { ChevronDownIcon, XIcon } from "./Icons";
 
-/**
- * Checkbox dropdown that returns the selected option objects.
- * `getKey` decides identity so callers can pass their own option shape.
- */
+// Dropdown with checkboxes. Options are { title, value } objects
+// and the selected options are passed to onChange.
 function MultiSelect({
   label,
   options = [],
   value = [],
   onChange,
-  getKey = (opt) => opt.title,
-  getLabel = (opt) => opt.title,
   limit,
   placeholder = "Select...",
   error,
   touched,
-  className = "",
 }) {
   const id = useId();
   const [open, setOpen] = useState(false);
   const wrapRef = useRef(null);
   const showError = Boolean(touched && error);
-  const selectedKeys = value.map(getKey);
+  const selectedTitles = value.map((opt) => opt.title);
 
   useEffect(() => {
     if (!open) return undefined;
@@ -39,24 +34,22 @@ function MultiSelect({
     };
   }, [open]);
 
+  const remove = (opt) =>
+    onChange?.(value.filter((item) => item.title !== opt.title));
+
   const toggle = (opt) => {
-    const key = getKey(opt);
-    const exists = selectedKeys.includes(key);
-    if (exists) {
-      onChange?.(value.filter((item) => getKey(item) !== key));
+    if (selectedTitles.includes(opt.title)) {
+      remove(opt);
       return;
     }
     if (limit && value.length >= limit) return;
     onChange?.([...value, opt]);
   };
 
-  const remove = (opt) =>
-    onChange?.(value.filter((item) => getKey(item) !== getKey(opt)));
-
   const atLimit = Boolean(limit && value.length >= limit);
 
   return (
-    <div className={cn("flex flex-col gap-1.5", className)} ref={wrapRef}>
+    <div className="flex flex-col gap-1.5" ref={wrapRef}>
       {label && (
         <label htmlFor={id} className="text-[13px] font-medium text-muted">
           {label}
@@ -84,14 +77,14 @@ function MultiSelect({
             <span className="flex flex-wrap items-center gap-1.5">
               {value.map((opt) => (
                 <span
-                  key={getKey(opt)}
+                  key={opt.title}
                   className="inline-flex items-center gap-1 rounded-md bg-elevated px-2 py-1 text-[12px] font-medium text-fg"
                 >
-                  {getLabel(opt)}
+                  {opt.title}
                   <span
                     role="button"
                     tabIndex={-1}
-                    aria-label={`Remove ${getLabel(opt)}`}
+                    aria-label={`Remove ${opt.title}`}
                     onClick={(event) => {
                       event.stopPropagation();
                       remove(opt);
@@ -119,11 +112,10 @@ function MultiSelect({
           <div className="absolute z-40 mt-1.5 w-full overflow-hidden rounded-xl border border-line bg-surface shadow-pop animate-scale-in">
             <ul role="listbox" className="max-h-56 overflow-y-auto p-1.5">
               {options.map((opt) => {
-                const key = getKey(opt);
-                const checked = selectedKeys.includes(key);
+                const checked = selectedTitles.includes(opt.title);
                 const blocked = !checked && atLimit;
                 return (
-                  <li key={key}>
+                  <li key={opt.title}>
                     <button
                       type="button"
                       role="option"
@@ -162,7 +154,7 @@ function MultiSelect({
                           </svg>
                         )}
                       </span>
-                      {getLabel(opt)}
+                      {opt.title}
                     </button>
                   </li>
                 );
@@ -170,7 +162,7 @@ function MultiSelect({
             </ul>
             {atLimit && (
               <p className="border-t border-line px-3 py-2 text-[12px] text-faint">
-                Limit of {limit} reached — remove one to pick another.
+                You can pick up to {limit}. Remove one to pick another.
               </p>
             )}
           </div>

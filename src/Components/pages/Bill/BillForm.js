@@ -23,7 +23,7 @@ import {
 import ProductsModal from "./ProductsModal";
 import axiosInstance, { errorMessage } from "../../../config/AxiosInstance";
 
-/** Bills saved before line items carried a productId fall back to the name. */
+// older bills have no productId, use the name for those
 const lineKey = (line) => line?.productId || line?.productname;
 
 function BillForm() {
@@ -43,16 +43,11 @@ function BillForm() {
   const [editingLine, setEditingLine] = useState(null);
   const [pendingRemove, setPendingRemove] = useState(null);
 
-  /* ---------------- data ---------------- */
-
   useEffect(() => {
     let cancelled = false;
     (async () => {
+      // load everything for the dropdowns (500 is the API maximum)
       const [customerRes, productRes] = await Promise.allSettled([
-        /* The two pickers search their own options locally, so they want the
-           whole list rather than a page of it. 500 is the server's ceiling —
-           past that a shop needs a picker that queries as you type, not a
-           bigger download. */
         axiosInstance.get("/customers", { params: { limit: 500 } }),
         axiosInstance.get("/products", { params: { limit: 500 } }),
       ]);
@@ -102,8 +97,6 @@ function BillForm() {
     };
   }, [id, isNew]);
 
-  /* ---------------- totals ---------------- */
-
   const totals = useMemo(
     () =>
       lines.reduce(
@@ -118,9 +111,7 @@ function BillForm() {
   );
   const tax = totals.total - totals.subtotal;
 
-  /* ---------------- stock guard ---------------- */
-
-  // What this bill may claim: live stock plus whatever it already reserved.
+  // stock left + what this bill already had when it was opened
   const maxQtyFor = useCallback(
     (productId) => {
       const product = products.find((p) => p._id === productId);
@@ -132,8 +123,6 @@ function BillForm() {
     },
     [products, originalLines]
   );
-
-  /* ---------------- form ---------------- */
 
   const formik = useFormik({
     enableReinitialize: true,
@@ -165,9 +154,6 @@ function BillForm() {
         const payload = {
           ...values,
           products: lines,
-          // Already whole paise — rounding it to two decimals was a rupee
-          // habit, and it is the server's number anyway: it reprices every
-          // line and ignores whatever total arrives.
           totalproductsprice: totals.total,
         };
         const res = isNew
@@ -199,8 +185,7 @@ function BillForm() {
     });
   };
 
-  // An older bill can name a customer who has since been deleted. Show that
-  // name in the picker instead of an empty placeholder that reads as "unset".
+  // keep showing the name if the customer on this bill was deleted
   const ORPHAN = "__on-this-bill__";
   const customerOptions = useMemo(() => {
     const options = customers.map((c) => ({
@@ -225,8 +210,6 @@ function BillForm() {
     customers.find((c) => c.name === formik.values.name)?._id ||
     (formik.values.name ? ORPHAN : "");
 
-  /* ---------------- line item handlers ---------------- */
-
   const saveLine = (line) => {
     setLines((prev) => {
       const index = prev.findIndex((item) => lineKey(item) === lineKey(line));
@@ -249,8 +232,6 @@ function BillForm() {
     .filter((line) => lineKey(line) !== lineKey(editingLine))
     .map((line) => line.productId)
     .filter(Boolean);
-
-  /* ---------------- render ---------------- */
 
   return (
     <>

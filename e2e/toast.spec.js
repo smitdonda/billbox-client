@@ -6,8 +6,7 @@ const {
   toastTops,
 } = require("./support/toasts");
 
-// Every toast here comes from a request the test itself fails, so nothing is
-// ever written and no account is needed.
+// The login request is failed on purpose to show toasts, no account needed
 
 test.describe("toast wording", () => {
   test("a request that never arrives says so, in plain words", async ({
@@ -17,7 +16,7 @@ test.describe("toast wording", () => {
     await raiseToasts(page);
 
     await expect(page.locator(TOAST)).toContainText(
-      "Cannot reach the server — check your connection."
+      "Cannot reach the server. Check your connection."
     );
   });
 
@@ -34,7 +33,6 @@ test.describe("toast wording", () => {
     await armFailingLogin(page, { fail: "500" });
     await raiseToasts(page);
 
-    // Not axios's "Request failed with status code 500".
     await expect(page.locator(TOAST)).toContainText("Could not sign you in");
     await expect(page.locator(TOAST)).not.toContainText("status code");
   });
@@ -52,17 +50,14 @@ test.describe("the stack", () => {
 
     const spread = Math.max(...tops) - Math.min(...tops);
     if (testInfo.project.name === "phone") {
-      // Piled: each one peeks a little above the last.
       expect(spread).toBeLessThan(60);
     } else {
-      // Fanned: a full toast height between each.
       expect(spread).toBeGreaterThan(120);
     }
   });
 });
 
-// Only exists on a touch device, so only the phone project runs it (see the
-// `grepInvert` in playwright.config.js).
+// only runs in the phone project (see playwright.config.js)
 test.describe("touch", { tag: "@touch" }, () => {
   test("the close button answers a finger, not just a cursor", async ({
     page,
@@ -73,8 +68,7 @@ test.describe("touch", { tag: "@touch" }, () => {
     const close = page.locator(`${TOAST} [data-close-button]`).first();
     const box = await close.boundingBox();
 
-    // Drawn at 20px. The tap below lands 14px off centre — outside the circle
-    // on screen, inside the 44px area the coarse-pointer rule adds.
+    // the button is 20px, tap 14px away from the centre (inside the 44px area)
     expect(Math.round(box.width)).toBeLessThanOrEqual(24);
 
     const offCentre = {
@@ -141,7 +135,7 @@ test.describe("the painted toast", () => {
     }, TOAST);
 
     expect(seen.type).toBe("error");
-    // --danger, the same red the rest of the app uses.
+    // --danger colour
     expect(seen.accent).toBe("rgb(173 57 57)");
     expect(seen.rail).toBe("rgb(173, 57, 57)");
     expect(seen.timerAnimation).toBe("toast-timer");
@@ -150,8 +144,7 @@ test.describe("the painted toast", () => {
     expect(seen.pageScrollsSideways).toBe(false);
   });
 
-  // Holding is a hover, which a phone does not have, so only the desktop
-  // project runs it.
+  // needs hover, so only runs in the desktop project
   test(
     "the timer bar holds while the toast is held",
     { tag: "@hover" },

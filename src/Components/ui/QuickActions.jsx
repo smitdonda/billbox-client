@@ -2,11 +2,6 @@ import React from "react";
 import { Link } from "react-router-dom";
 import cn from "./cn";
 
-/*
- * The handful of screens someone opens fifty times a day, one tap from the
- * dashboard instead of a trip through the rail. Each tile carries its own hue
- * so the row is scanned by colour rather than read word by word.
- */
 function QuickActions({ items, className = "" }) {
   return (
     <section className={cn("card p-5", className)}>

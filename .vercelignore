@@ -1,11 +1,8 @@
-# Configuration comes from Vercel's environment variables, not from a local
-# file that happens to be sitting in the directory.
 .env
 .env.*
 .env.local
 .env.development.local
 
-# Vercel runs the build itself; a stale local one would only confuse things.
 build/
 node_modules/
 .git/

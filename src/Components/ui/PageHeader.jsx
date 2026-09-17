@@ -1,15 +1,8 @@
 import React from "react";
-import cn from "./cn";
 
-/** Title + optional description on the left, actions on the right. */
-function PageHeader({ title, description, actions, className = "" }) {
+function PageHeader({ title, description, actions }) {
   return (
-    <div
-      className={cn(
-        "mb-6 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between",
-        className
-      )}
-    >
+    <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
       <div className="min-w-0">
         <h1 className="text-xl font-semibold tracking-tight text-fg sm:text-2xl">
           {title}

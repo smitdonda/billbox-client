@@ -16,8 +16,7 @@ const PDF_OPTIONS = {
   canvas: { mimeType: "image/png", qualityRatio: 1 },
 };
 
-/* The sheet is a document, not app chrome: its colours are pinned to paper
-   rather than to the app tokens, so the exported PDF never shifts with them. */
+// fixed colours for the invoice so the PDF always looks the same
 const SHEET_TEXT = "text-zinc-900";
 const SHEET_MUTED = "text-zinc-500";
 const SHEET_LINE = "border-zinc-300";
@@ -37,8 +36,8 @@ function BillTable() {
     try {
       setExporting(true);
       await toPDF({ filename: `invoice-${invoice?.id || id}.pdf` });
-    } catch (error) {
-      toast.error("Could not build the PDF — use Print instead");
+    } catch {
+      toast.error("Could not create the PDF, try Print instead");
     } finally {
       setExporting(false);
     }
@@ -135,8 +134,7 @@ function BillTable() {
           <div className="skeleton mt-8 h-40 w-full" />
         </div>
       ) : (
-        /* The sheet keeps a fixed A4-ish width and scrolls horizontally on
-           phones rather than reflowing — an invoice has to keep its shape. */
+        // fixed width (like A4), scrolls sideways on small screens
         <div className="overflow-x-auto pb-4">
           <div
             ref={sheetRef}

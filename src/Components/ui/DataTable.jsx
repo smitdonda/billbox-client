@@ -1,10 +1,4 @@
-import React, {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import cn from "./cn";
 import {
   ChevronLeftIcon,
@@ -16,45 +10,12 @@ import {
   XIcon,
 } from "./Icons";
 import { Button, IconButton } from "./Button";
-import CopyValue from "./CopyValue";
 
-/* ------------------------------------------------------------------ */
-/*  helpers                                                            */
-/* ------------------------------------------------------------------ */
+const PAGE_SIZES = [8, 15, 30, 60];
+const ARIA_SORT = { asc: "ascending", desc: "descending" };
 
-const rawValue = (row, col) =>
+const cellValue = (row, col) =>
   typeof col.accessor === "function" ? col.accessor(row) : row?.[col.key];
-
-const searchText = (row, col) => {
-  if (col.searchValue) return String(col.searchValue(row) ?? "");
-  const value = rawValue(row, col);
-  if (value == null) return "";
-  if (Array.isArray(value))
-    return value.map((v) => v?.productname ?? v).join(" ");
-  return String(value);
-};
-
-const compare = (a, b) => {
-  if (a == null && b == null) return 0;
-  if (a == null) return -1;
-  if (b == null) return 1;
-  if (typeof a === "number" && typeof b === "number") return a - b;
-  const da = Date.parse(a);
-  const db = Date.parse(b);
-  if (
-    !Number.isNaN(da) &&
-    !Number.isNaN(db) &&
-    typeof a === "string" &&
-    a.includes("-")
-  ) {
-    return da - db;
-  }
-  const na = Number(a);
-  const nb = Number(b);
-  if (!Number.isNaN(na) && !Number.isNaN(nb) && a !== "" && b !== "")
-    return na - nb;
-  return String(a).localeCompare(String(b), undefined, { numeric: true });
-};
 
 const alignClass = (col) =>
   cn(
@@ -62,13 +23,6 @@ const alignClass = (col) =>
     col.align === "center" && "text-center"
   );
 
-const ARIA_SORT = { asc: "ascending", desc: "descending" };
-
-/*
- * Both chevrons show on every sortable column, so which columns sort can be
- * seen without hovering for it. Sorting colours the header's chevrons and
- * fades the one pointing against the order the rows are now in.
- */
 function SortIndicator({ dir }) {
   return (
     <svg
@@ -93,111 +47,47 @@ function SortIndicator({ dir }) {
   );
 }
 
-/*
- * Every record is its own rounded row on the page ground. A cell can only
- * draw part of a row's outline, so each one takes the top and bottom edge and
- * the first and last add the sides and the rounding.
- */
+// each row is drawn as a rounded card, so the first and last cells add the sides
 const rowCell =
   "h-16 border-y border-line bg-surface px-4 align-middle text-fg transition-colors " +
   "first:rounded-l-xl first:border-l first:pl-5 last:rounded-r-xl last:border-r last:pr-5 " +
   "group-hover:border-strong";
 
-/* ------------------------------------------------------------------ */
-/*  table                                                              */
-/* ------------------------------------------------------------------ */
+const headCell =
+  "sticky top-0 z-10 bg-bg px-4 pb-1 pt-2 first:pl-5 last:pr-5 text-left " +
+  "text-[12px] font-medium text-muted shadow-[0_8px_0_0_rgb(var(--bg))]";
 
+// Table for the list pages. Search, sort and paging state comes from
+// useServerTable through the `server` prop.
 function DataTable({
   columns = [],
   data = [],
   loading = false,
+  server,
   rowActions,
-  getRowId = (row, index) => row?._id ?? index,
-  searchable = true,
   searchPlaceholder = "Search...",
-  pageSizeOptions = [8, 15, 30, 60],
-  initialPageSize = 8,
-  minWidth = "52rem",
   emptyTitle = "Nothing here yet",
   emptyDescription,
   emptyAction,
   toolbar,
-  className = "",
-  server = null,
 }) {
-  /*
-   * Two modes, one component.
-   *
-   * Without `server` the table owns its search, sort and paging and works over
-   * whatever rows it was handed — right for a short, fully loaded list.
-   *
-   * With `server` (see hooks/useServerTable) those three pieces of state live
-   * outside and each change refetches one page. `data` is then already the
-   * page: nothing here filters, sorts or slices it, because the database did.
-   */
-  const controlled = Boolean(server);
+  const {
+    total,
+    pageCount: serverPageCount,
+    page,
+    pageSize,
+    query,
+    sort,
+    onPageChange: setPage,
+    onPageSizeChange: setPageSize,
+    onQueryChange: setQuery,
+    onSortChange: setSort,
+  } = server;
 
-  const [localQuery, setLocalQuery] = useState("");
-  const [localSort, setLocalSort] = useState({ key: null, dir: "asc" });
-  const [localPageSize, setLocalPageSize] = useState(initialPageSize);
-  const [localPage, setLocalPage] = useState(0);
-
-  const query = controlled ? server.query : localQuery;
-  const setQuery = controlled ? server.onQueryChange : setLocalQuery;
-  const sort = controlled ? server.sort : localSort;
-  const setSort = controlled ? server.onSortChange : setLocalSort;
-  const pageSize = controlled ? server.pageSize : localPageSize;
-  const setPageSize = controlled ? server.onPageSizeChange : setLocalPageSize;
-  const page = controlled ? server.page : localPage;
-  const setPage = controlled ? server.onPageChange : setLocalPage;
-
-  const filtered = useMemo(() => {
-    if (controlled) return data;
-    const q = query.trim().toLowerCase();
-    if (!q) return data;
-    const searchCols = columns.filter((col) => col.searchable !== false);
-    return data.filter((row) =>
-      searchCols.some((col) => searchText(row, col).toLowerCase().includes(q))
-    );
-  }, [controlled, data, columns, query]);
-
-  const sorted = useMemo(() => {
-    if (controlled || !sort.key) return filtered;
-    const col = columns.find((c) => c.key === sort.key);
-    if (!col) return filtered;
-    const factor = sort.dir === "asc" ? 1 : -1;
-    return [...filtered].sort(
-      (a, b) =>
-        factor *
-        compare(
-          col.sortValue ? col.sortValue(a) : rawValue(a, col),
-          col.sortValue ? col.sortValue(b) : rawValue(b, col)
-        )
-    );
-  }, [controlled, filtered, columns, sort]);
-
-  // In server mode these describe the whole result set, not the loaded page.
-  const totalRows = controlled ? server.total : sorted.length;
-  const pageCount = controlled
-    ? Math.max(1, server.pageCount)
-    : Math.max(1, Math.ceil(sorted.length / pageSize));
+  const pageCount = Math.max(1, serverPageCount);
   const safePage = Math.min(page, pageCount - 1);
 
-  const rows = useMemo(
-    () =>
-      controlled
-        ? sorted
-        : sorted.slice(safePage * pageSize, safePage * pageSize + pageSize),
-    [controlled, sorted, safePage, pageSize]
-  );
-
-  useEffect(() => {
-    // The server hook resets its own page; doing it here too would fight it.
-    if (!controlled) setLocalPage(0);
-  }, [controlled, query, pageSize, data]);
-
-  /* Wide tables scroll sideways with nothing to say so. These two fades are
-     the only hint that a column is hiding past the edge. */
+  // show a shadow on the side where the table can scroll
   const scrollRef = useRef(null);
   const [edges, setEdges] = useState({ left: false, right: false });
 
@@ -214,8 +104,9 @@ function DataTable({
     syncEdges();
     window.addEventListener("resize", syncEdges);
     return () => window.removeEventListener("resize", syncEdges);
-  }, [syncEdges, rows, loading]);
+  }, [syncEdges, data, loading]);
 
+  // asc -> desc -> no sort
   const toggleSort = (col) => {
     if (col.sortable === false) return;
     setSort((prev) =>
@@ -228,16 +119,15 @@ function DataTable({
   };
 
   const renderCell = (row, col, index) => {
-    const value = rawValue(row, col);
+    const value = cellValue(row, col);
     if (col.cell) return col.cell({ value, row, index });
-    if (col.copyable) return <CopyValue value={value} />;
     if (value == null || value === "")
       return <span className="text-faint">—</span>;
     return value;
   };
 
   const colCount = columns.length + (rowActions ? 1 : 0);
-  const showEmpty = !loading && totalRows === 0;
+  const showEmpty = !loading && total === 0;
 
   const emptyBlock = (
     <EmptyBlock
@@ -255,52 +145,41 @@ function DataTable({
     />
   );
 
-  /* The header sits on the page ground rather than a band of its own. The
-     8px shadow paints that ground over the gap below it, so rows scrolling
-     under the sticky header do not show through between it and the next. */
-  const headCell =
-    "sticky top-0 z-10 bg-bg px-4 pb-1 pt-2 first:pl-5 last:pr-5 text-left " +
-    "text-[12px] font-medium text-muted shadow-[0_8px_0_0_rgb(var(--bg))]";
-
   return (
-    <div className={cn("min-w-0", className)}>
-      {/* toolbar ---------------------------------------------------- */}
-      {(searchable || toolbar) && (
-        <div className="flex flex-col gap-3 pb-2 sm:flex-row sm:items-center sm:justify-between">
-          {searchable && (
-            <div className="relative w-full sm:max-w-xs">
-              <SearchIcon
-                size={16}
-                className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-faint"
-              />
-              <input
-                value={query}
-                onChange={(event) => setQuery(event.target.value)}
-                placeholder={searchPlaceholder}
-                aria-label={searchPlaceholder}
-                className="h-10 w-full rounded-xl border border-line bg-surface pl-10 pr-9 text-sm text-fg placeholder:text-faint transition-colors hover:border-strong focus:border-fg focus:outline-none focus:ring-2 focus:ring-fg/15"
-              />
-              {query && (
-                <button
-                  type="button"
-                  onClick={() => setQuery("")}
-                  aria-label="Clear search"
-                  className="absolute right-2.5 top-1/2 -translate-y-1/2 rounded-md p-1 text-faint transition-colors hover:text-fg focus-ring"
-                >
-                  <XIcon size={14} />
-                </button>
-              )}
-            </div>
-          )}
-          {toolbar ?? (
-            <span className="text-[13px] tabular-nums text-muted">
-              {totalRows} {totalRows === 1 ? "record" : "records"}
-            </span>
+    <div className="min-w-0">
+      {/* toolbar */}
+      <div className="flex flex-col gap-3 pb-2 sm:flex-row sm:items-center sm:justify-between">
+        <div className="relative w-full sm:max-w-xs">
+          <SearchIcon
+            size={16}
+            className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-faint"
+          />
+          <input
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder={searchPlaceholder}
+            aria-label={searchPlaceholder}
+            className="h-10 w-full rounded-xl border border-line bg-surface pl-10 pr-9 text-sm text-fg placeholder:text-faint transition-colors hover:border-strong focus:border-fg focus:outline-none focus:ring-2 focus:ring-fg/15"
+          />
+          {query && (
+            <button
+              type="button"
+              onClick={() => setQuery("")}
+              aria-label="Clear search"
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 rounded-md p-1 text-faint transition-colors hover:text-fg focus-ring"
+            >
+              <XIcon size={14} />
+            </button>
           )}
         </div>
-      )}
+        {toolbar ?? (
+          <span className="text-[13px] tabular-nums text-muted">
+            {total} {total === 1 ? "record" : "records"}
+          </span>
+        )}
+      </div>
 
-      {/* desktop table ---------------------------------------------- */}
+      {/* desktop table */}
       <div className="relative hidden md:block">
         <div
           ref={scrollRef}
@@ -309,7 +188,7 @@ function DataTable({
         >
           <table
             className="w-full border-separate border-spacing-x-0 border-spacing-y-2 text-sm"
-            style={{ minWidth }}
+            style={{ minWidth: "52rem" }}
           >
             <thead>
               <tr>
@@ -324,7 +203,6 @@ function DataTable({
                       aria-sort={
                         sortable ? ARIA_SORT[dir] || "none" : undefined
                       }
-                      style={col.width ? { width: col.width } : undefined}
                       className={cn(headCell, alignClass(col))}
                     >
                       {sortable ? (
@@ -375,17 +253,12 @@ function DataTable({
                 ))}
 
               {!loading &&
-                rows.map((row, index) => (
-                  <tr key={getRowId(row, index)} className="group">
+                data.map((row, index) => (
+                  <tr key={row._id ?? index} className="group">
                     {columns.map((col) => (
                       <td
                         key={col.key}
-                        className={cn(
-                          rowCell,
-                          alignClass(col),
-                          col.mono && "font-mono text-[13px]",
-                          col.truncate && "max-w-[16rem] truncate"
-                        )}
+                        className={cn(rowCell, alignClass(col))}
                       >
                         {renderCell(row, col, index)}
                       </td>
@@ -394,8 +267,6 @@ function DataTable({
                       <td
                         className={cn(rowCell, "whitespace-nowrap text-right")}
                       >
-                        {/* Full strength, always: a hover-only action is
-                            invisible to keyboard and touch. */}
                         <div className="flex items-center justify-end gap-1.5">
                           {rowActions(row)}
                         </div>
@@ -434,7 +305,7 @@ function DataTable({
         />
       </div>
 
-      {/* mobile cards ------------------------------------------------ */}
+      {/* mobile cards */}
       <div className="space-y-2 md:hidden">
         {loading &&
           Array.from({ length: 3 }).map((_, r) => (
@@ -449,11 +320,11 @@ function DataTable({
           ))}
 
         {!loading &&
-          rows.map((row, index) => {
+          data.map((row, index) => {
             const [primary, ...restCols] = columns;
             return (
               <div
-                key={getRowId(row, index)}
+                key={row._id ?? index}
                 className="rounded-xl border border-line bg-surface p-4 transition-colors active:border-strong"
               >
                 <div className="flex items-start justify-between gap-3">
@@ -489,7 +360,7 @@ function DataTable({
         )}
       </div>
 
-      {/* pagination -------------------------------------------------- */}
+      {/* pagination */}
       {!showEmpty && (
         <div className="flex flex-col gap-3 pt-2 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-2 text-[13px] text-muted">
@@ -500,7 +371,7 @@ function DataTable({
               aria-label="Rows per page"
               className="h-8 rounded-lg border border-line bg-surface px-2 text-[13px] text-fg transition-colors hover:border-strong focus:border-fg focus:outline-none focus:ring-2 focus:ring-fg/15"
             >
-              {pageSizeOptions.map((n) => (
+              {PAGE_SIZES.map((n) => (
                 <option key={n} value={n}>
                   {n}
                 </option>
@@ -508,13 +379,13 @@ function DataTable({
             </select>
             <span className="tabular-nums">
               Showing{" "}
-              {totalRows === 0
+              {total === 0
                 ? "0"
                 : `${safePage * pageSize + 1}–${Math.min(
                     (safePage + 1) * pageSize,
-                    totalRows
+                    total
                   )}`}{" "}
-              of {totalRows}
+              of {total}
             </span>
           </div>
 

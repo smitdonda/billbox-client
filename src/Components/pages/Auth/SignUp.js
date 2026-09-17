@@ -26,7 +26,7 @@ function SignUp() {
         password,
       });
       if (res.data?.success) {
-        toast.success("Account created — sign in to continue");
+        toast.success("Account created, please sign in");
         navigate("/login", { replace: true });
         return;
       }

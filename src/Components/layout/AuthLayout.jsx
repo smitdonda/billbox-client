@@ -14,11 +14,10 @@ const HIGHLIGHTS = [
   { icon: FileTextIcon, text: "Generate a tax invoice PDF in one click" },
 ];
 
-/** Split screen on large viewports; the form alone on phones. */
+// Login / sign up layout: info panel on the left (large screens only)
 function AuthLayout({ title, subtitle, children, footer }) {
   return (
     <div className="grid min-h-screen bg-bg lg:grid-cols-2">
-      {/* pitch panel — decorative, hidden on small screens */}
       <div className="relative hidden flex-col justify-between overflow-hidden border-r border-line bg-surface p-10 lg:flex">
         <div
           aria-hidden="true"
@@ -65,9 +64,8 @@ function AuthLayout({ title, subtitle, children, footer }) {
         </p>
       </div>
 
-      {/* form panel */}
       <div className="flex flex-col">
-        {/* The pitch panel carries the wordmark from `lg` up. */}
+        {/* logo for small screens */}
         <div className="flex items-center p-4 sm:p-6 lg:hidden">
           <Link
             to="/"
@@ -101,7 +99,6 @@ function AuthLayout({ title, subtitle, children, footer }) {
   );
 }
 
-/** Copyable demo credentials block shown under the login form. */
 function DemoCredentials({ email, password, onUse }) {
   return (
     <div className="rounded-xl border border-dashed border-strong bg-surface p-4">

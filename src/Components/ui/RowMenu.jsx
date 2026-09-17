@@ -11,18 +11,9 @@ import { Link } from "react-router-dom";
 import cn from "./cn";
 import { MoreHorizontalIcon } from "./Icons";
 
-/**
- * A "⋯" button that opens a short menu of row actions.
- *
- * The menu renders into <body> and is placed from the button's position: the
- * table scrolls inside its own box, which would clip a menu opened near its
- * edge. It opens upward when there is no room below, closes on Escape, on a
- * click elsewhere and on any scroll, and the arrow keys move through it the
- * way they do in a native menu.
- *
- * Items are `{ label, icon, to }` for a link or `{ label, icon, onSelect }`
- * for an action; `tone: "danger"` marks a destructive one.
- */
+// "More actions" menu for a table row.
+// items: { label, icon, to } for links or { label, icon, onSelect } for actions.
+// The menu is rendered in <body> so the table's scroll area can't cut it off.
 function RowMenu({ label = "More actions", items = [] }) {
   const [open, setOpen] = useState(false);
   const [position, setPosition] = useState(null);
@@ -36,7 +27,7 @@ function RowMenu({ label = "More actions", items = [] }) {
     if (refocus) buttonRef.current?.focus();
   }, []);
 
-  // The menu first renders hidden so it can be measured, then placed.
+  // position the menu under the button, or above it if there is no room
   useLayoutEffect(() => {
     if (!open || !buttonRef.current || !menuRef.current) return;
     const button = buttonRef.current.getBoundingClientRect();
@@ -61,7 +52,6 @@ function RowMenu({ label = "More actions", items = [] }) {
       }
       close(false);
     };
-    // A fixed menu would float away from its row, so it goes instead.
     const onMove = () => close(false);
     document.addEventListener("mousedown", onPointerDown);
     window.addEventListener("resize", onMove);
@@ -98,8 +88,6 @@ function RowMenu({ label = "More actions", items = [] }) {
       event.preventDefault();
       focusAt(entries.length - 1);
     } else if (event.key === "Escape" || event.key === "Tab") {
-      // The menu sits at the end of <body>; Tab from there would land nowhere
-      // useful, so focus goes back to the button it came from.
       event.preventDefault();
       close(true);
     }
@@ -173,8 +161,6 @@ function RowMenu({ label = "More actions", items = [] }) {
                   role="menuitem"
                   className={itemClass(item.tone)}
                   onClick={() => {
-                    // Back on the button first, so a dialog this opens hands
-                    // focus back to it when it closes.
                     close(true);
                     item.onSelect?.();
                   }}

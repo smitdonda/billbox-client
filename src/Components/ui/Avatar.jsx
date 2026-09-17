@@ -1,11 +1,7 @@
 import React from "react";
 import cn from "./cn";
 
-/*
- * Initials on a tint. The hue is worked out from the name, so a customer
- * keeps the same colour everywhere they appear: on Bills and on Customers.
- * The classes are written out whole so Tailwind can find them.
- */
+// full class names so Tailwind picks them up
 const TONES = [
   "bg-accent/10 text-accent",
   "bg-teal/10 text-teal",
@@ -13,6 +9,7 @@ const TONES = [
   "bg-rose/10 text-rose",
 ];
 
+// same name always gets the same colour
 const toneFor = (name) => {
   let hash = 7;
   for (const ch of String(name || "")) {
@@ -30,14 +27,13 @@ const initialsOf = (name) =>
     .map((word) => [...word][0].toUpperCase())
     .join("") || "?";
 
-function Avatar({ name, className = "" }) {
+function Avatar({ name }) {
   return (
     <span
       aria-hidden="true"
       className={cn(
         "flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[12.5px] font-semibold",
-        toneFor(name),
-        className
+        toneFor(name)
       )}
     >
       {initialsOf(name)}

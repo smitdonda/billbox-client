@@ -12,12 +12,9 @@ import useServerTable from "../../../hooks/useServerTable";
 import ProductForm from "./ProductFrom";
 import axiosInstance, { errorMessage } from "../../../config/AxiosInstance";
 
-/* Only until the first page arrives: after that the API says where "low"
-   starts, so this page and the dashboard always agree. */
+// used until the API sends lowStockAt
 const FALLBACK_LOW_STOCK_AT = 5;
 
-/* Stock in words with its count. Every row wears one, so a low shelf stands
-   out by what it says, not only by being the one row with a chip. */
 function StockStatus({ qty, lowAt }) {
   const value = Number(qty) || 0;
   if (value === 0) {
@@ -42,8 +39,6 @@ function StockStatus({ qty, lowAt }) {
 }
 
 function ProducstDetails() {
-  /* One page of the catalogue at a time. Search, sort and paging are the
-     database's job — see hooks/useServerTable. */
   const {
     rows: products,
     meta,
@@ -142,9 +137,7 @@ function ProducstDetails() {
         key: "stockValue",
         header: "Stock value",
         align: "right",
-        searchable: false,
-        // Derived per row, so the database cannot order by it — and sorting
-        // one page of it would be a lie about the whole catalogue.
+        // calculated here, so the API can't sort by it
         sortable: false,
         accessor: (row) =>
           (Number(row.unitprice) || 0) * (Number(row.availableproductqty) || 0),
@@ -183,8 +176,6 @@ function ProducstDetails() {
         }
         toolbar={
           meta.total > 0 && (
-            /* Counted and summed across the whole catalogue by the server,
-               not across the rows that happen to be on screen. */
             <span className="flex flex-wrap items-center gap-x-1.5 text-[13px] tabular-nums text-muted">
               <span>
                 {number(meta.total)} {meta.total === 1 ? "product" : "products"}

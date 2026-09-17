@@ -3,7 +3,6 @@ import Modal from "./Modal";
 import { Button } from "./Button";
 import { AlertTriangleIcon } from "./Icons";
 
-/** Blocking confirmation for destructive actions. */
 function ConfirmDialog({
   open,
   onClose,
@@ -11,7 +10,6 @@ function ConfirmDialog({
   title = "Are you sure?",
   description,
   confirmLabel = "Delete",
-  cancelLabel = "Cancel",
   loading = false,
 }) {
   return (
@@ -23,7 +21,7 @@ function ConfirmDialog({
       footer={
         <>
           <Button variant="secondary" onClick={onClose} disabled={loading}>
-            {cancelLabel}
+            Cancel
           </Button>
           <Button
             variant="solidDanger"

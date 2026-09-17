@@ -1,14 +1,7 @@
 import React from "react";
 import { AlertTriangleIcon } from "./Icons";
 
-/**
- * Catches render-time crashes so one broken screen does not leave the user
- * staring at a blank page. Deliberately a class — React has no hook for this.
- *
- * The recovery buttons use full page loads rather than router navigation: the
- * boundary sits outside the router, and a hard reload is the one thing certain
- * to clear whatever state caused the crash.
- */
+// Shows an error screen instead of a blank page when rendering crashes
 class ErrorBoundary extends React.Component {
   constructor(props) {
     super(props);
@@ -27,6 +20,7 @@ class ErrorBoundary extends React.Component {
     const { error } = this.state;
     if (!error) return this.props.children;
 
+    // full page reloads here because this sits outside the router
     return (
       <div className="flex min-h-screen items-center justify-center bg-bg px-4">
         <div className="card w-full max-w-md p-8 text-center">
@@ -41,8 +35,6 @@ class ErrorBoundary extends React.Component {
             This screen hit an error and stopped. Your data is untouched.
           </p>
 
-          {/* The message helps when someone reports the problem; the stack
-              stays in the console rather than on screen. */}
           <p className="mt-4 break-words rounded-lg border border-line bg-elevated px-3 py-2 text-left font-mono text-[12px] text-muted">
             {error.message || String(error)}
           </p>

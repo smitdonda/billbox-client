@@ -69,7 +69,7 @@ const QUICK = [
   },
 ];
 
-/** First letters of the first two words — "Shreeji Hardware" reads "SH". */
+// "Shreeji Hardware" -> "SH"
 const initials = (name) =>
   String(name || "?")
     .trim()
@@ -91,11 +91,6 @@ function Home() {
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
 
-  /*
-   * One request for the whole dashboard. The sums, the monthly buckets and
-   * the top-N lists are all the database's job, so what arrives is a fixed
-   * handful of rows however long the account has been running.
-   */
   useEffect(() => {
     let cancelled = false;
 
@@ -137,16 +132,16 @@ function Home() {
     [lowStock]
   );
 
-  /* One line under the greeting, saying the most urgent true thing. */
+  // short status line under the greeting
   const headline = useMemo(() => {
-    if (loading) return "Loading your books…";
+    if (loading) return "Loading your books...";
     if (outOfStock) {
       return `${outOfStock} ${outOfStock === 1 ? "item is" : "items are"} out of stock and ${lowStockCount} ${lowStockCount === 1 ? "needs" : "need"} restocking.`;
     }
     if (lowStockCount) {
       return `${lowStockCount} ${lowStockCount === 1 ? "item needs" : "items need"} restocking.`;
     }
-    if (!counts.billInformation) return "No bills raised yet — start with one.";
+    if (!counts.billInformation) return "No bills raised yet. Start with one.";
     return "Everything is stocked and up to date.";
   }, [loading, outOfStock, lowStockCount, counts.billInformation]);
 
@@ -154,7 +149,7 @@ function Home() {
 
   return (
     <>
-      {/* ---- greeting band ---- */}
+      {/* greeting */}
       <section className="band rounded-2xl px-5 pb-[4.5rem] pt-6 sm:px-7 sm:pt-7">
         <div className="relative z-10 flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
           <div className="min-w-0">
@@ -202,7 +197,7 @@ function Home() {
         </div>
       </section>
 
-      {/* ---- the two figures the page leads with, lifted over the band ---- */}
+      {/* total billed and stock value */}
       <div className="relative z-10 -mt-12 grid grid-cols-1 gap-4 px-2 sm:grid-cols-2 sm:px-3">
         <MoneyCard
           label="Total billed"
@@ -232,7 +227,7 @@ function Home() {
 
       <QuickActions items={QUICK} className="mt-4" />
 
-      {/* ---- sales chart + stock alerts ---- */}
+      {/* sales chart and stock alerts */}
       <div className="mt-4 grid grid-cols-1 gap-4 xl:grid-cols-3">
         <section className="card p-5 xl:col-span-2">
           <div className="mb-1 flex items-start justify-between gap-3">
@@ -334,7 +329,7 @@ function Home() {
         </section>
       </div>
 
-      {/* ---- recent bills ---- */}
+      {/* recent bills */}
       <section className="card mt-4 overflow-hidden">
         <div className="flex items-center justify-between gap-3 p-5 pb-4">
           <div>

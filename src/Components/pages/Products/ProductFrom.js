@@ -34,8 +34,7 @@ function ProductForm({ id, open, handleClose, editData, getProductsData }) {
       const payload = {
         productname: values.productname.trim(),
         availableproductqty: Number(values.availableproductqty),
-        // The field is in rupees because that is what people type; the API
-        // stores whole paise.
+        // rupees -> paise
         unitprice: toPaise(values.unitprice),
       };
       const res = id

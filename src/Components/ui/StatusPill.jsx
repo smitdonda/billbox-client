@@ -1,11 +1,6 @@
 import React from "react";
 import cn from "./cn";
 
-/*
- * A state in words on a tint of its colour: "Low · 4", "B2B", "Registered".
- * The words carry the meaning and the colour only repeats it, so the pill
- * still reads for anyone who cannot tell the tones apart.
- */
 const TONES = {
   success: "bg-success/10 text-success",
   warning: "bg-warning/10 text-warning-ink",
@@ -14,20 +9,13 @@ const TONES = {
   neutral: "bg-elevated text-muted",
 };
 
-function StatusPill({
-  tone = "neutral",
-  dot = false,
-  title,
-  className = "",
-  children,
-}) {
+function StatusPill({ tone = "neutral", dot = false, title, children }) {
   return (
     <span
       title={title}
       className={cn(
         "inline-flex h-6 items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 text-[12px] font-medium tabular-nums",
-        TONES[tone] || TONES.neutral,
-        className
+        TONES[tone] || TONES.neutral
       )}
     >
       {dot && (
