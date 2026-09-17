@@ -5,7 +5,8 @@ import PageHeader from "../../ui/PageHeader";
 import DataTable from "../../ui/DataTable";
 import ConfirmDialog from "../../ui/ConfirmDialog";
 import StatusPill from "../../ui/StatusPill";
-import { Button, IconButton } from "../../ui/Button";
+import RowMenu from "../../ui/RowMenu";
+import { Button } from "../../ui/Button";
 import { CrateIcon, PlusIcon, PencilIcon, TrashIcon } from "../../ui/Icons";
 import { money, number } from "../../ui/format";
 import useServerTable from "../../../hooks/useServerTable";
@@ -110,10 +111,16 @@ function ProducstDetails() {
               <CrateIcon size={18} />
             </span>
             <div className="min-w-0">
-              <p className="truncate font-medium text-fg">
+              <p
+                className="truncate font-medium text-fg"
+                title={row.productname || "—"}
+              >
                 {row.productname || "—"}
               </p>
-              <p className="truncate text-[12.5px] tabular-nums text-muted">
+              <p
+                className="truncate text-[12.5px] tabular-nums text-muted"
+                title={`#${row.id}`}
+              >
                 #{row.id}
               </p>
             </div>
@@ -205,23 +212,22 @@ function ProducstDetails() {
           )
         }
         rowActions={(row) => (
-          <>
-            <Button
-              variant="secondary"
-              size="sm"
-              icon={PencilIcon}
-              onClick={() => openEdit(row)}
-              aria-label={`Edit ${row.productname || "product"}`}
-            >
-              Edit
-            </Button>
-            <IconButton
-              icon={TrashIcon}
-              label="Delete product"
-              tone="danger"
-              onClick={() => setPendingDelete(row)}
-            />
-          </>
+          <RowMenu
+            label={`More actions for ${row.productname || "product"}`}
+            items={[
+              {
+                label: "Edit product",
+                icon: PencilIcon,
+                onSelect: () => openEdit(row),
+              },
+              {
+                label: "Delete product",
+                icon: TrashIcon,
+                tone: "danger",
+                onSelect: () => setPendingDelete(row),
+              },
+            ]}
+          />
         )}
       />
 

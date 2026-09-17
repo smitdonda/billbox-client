@@ -8,7 +8,8 @@ import ConfirmDialog from "../../ui/ConfirmDialog";
 import Avatar from "../../ui/Avatar";
 import CopyValue from "../../ui/CopyValue";
 import StatusPill from "../../ui/StatusPill";
-import { Button, IconButton } from "../../ui/Button";
+import RowMenu from "../../ui/RowMenu";
+import { Button } from "../../ui/Button";
 import { PlusIcon, PencilIcon, TrashIcon } from "../../ui/Icons";
 import { number } from "../../ui/format";
 import useServerTable from "../../../hooks/useServerTable";
@@ -80,8 +81,16 @@ function CustomerDetails() {
           <div className="flex min-w-0 items-center gap-3">
             <Avatar name={row.name} />
             <div className="min-w-0">
-              <p className="truncate font-medium text-fg">{row.name || "—"}</p>
-              <p className="truncate text-[12.5px] text-muted">
+              <p
+                className="truncate font-medium text-fg"
+                title={row.name || "—"}
+              >
+                {row.name || "—"}
+              </p>
+              <p
+                className="truncate text-[12.5px] text-muted"
+                title={row.email || `Customer #${row.id}`}
+              >
                 {row.email || `Customer #${row.id}`}
               </p>
             </div>
@@ -94,7 +103,9 @@ function CustomerDetails() {
         sortable: false,
         cell: ({ value }) =>
           value ? (
-            <span className="whitespace-nowrap tabular-nums">{value}</span>
+            <span className="whitespace-nowrap tabular-nums" title={value}>
+              {value}
+            </span>
           ) : (
             <span className="text-faint">—</span>
           ),
@@ -168,23 +179,22 @@ function CustomerDetails() {
           )
         }
         rowActions={(row) => (
-          <>
-            <Button
-              variant="secondary"
-              size="sm"
-              icon={PencilIcon}
-              onClick={() => openEdit(row)}
-              aria-label={`Edit ${row.name || "customer"}`}
-            >
-              Edit
-            </Button>
-            <IconButton
-              icon={TrashIcon}
-              label="Delete customer"
-              tone="danger"
-              onClick={() => setPendingDelete(row)}
-            />
-          </>
+          <RowMenu
+            label={`More actions for ${row.name || "customer"}`}
+            items={[
+              {
+                label: "Edit customer",
+                icon: PencilIcon,
+                onSelect: () => openEdit(row),
+              },
+              {
+                label: "Delete customer",
+                icon: TrashIcon,
+                tone: "danger",
+                onSelect: () => setPendingDelete(row),
+              },
+            ]}
+          />
         )}
       />
 

@@ -11,7 +11,7 @@ import {
 } from "./Icons";
 import { Button, IconButton } from "./Button";
 
-const PAGE_SIZES = [8, 15, 30, 60];
+const PAGE_SIZES = [10, 25, 50, 100];
 const ARIA_SORT = { asc: "ascending", desc: "descending" };
 
 const cellValue = (row, col) =>
@@ -47,15 +47,13 @@ function SortIndicator({ dir }) {
   );
 }
 
-// each row is drawn as a rounded card, so the first and last cells add the sides
 const rowCell =
-  "h-16 border-y border-line bg-surface px-4 align-middle text-fg transition-colors " +
-  "first:rounded-l-xl first:border-l first:pl-5 last:rounded-r-xl last:border-r last:pr-5 " +
-  "group-hover:border-strong";
+  "h-16 border-b border-line bg-surface px-4 align-middle text-fg transition-colors " +
+  "first:pl-5 last:pr-5 group-hover:bg-elevated/45";
 
 const headCell =
-  "sticky top-0 z-10 bg-bg px-4 pb-1 pt-2 first:pl-5 last:pr-5 text-left " +
-  "text-[12px] font-medium text-muted shadow-[0_8px_0_0_rgb(var(--bg))]";
+  "sticky top-0 z-10 border-b border-line bg-elevated px-4 py-3 first:pl-5 last:pr-5 " +
+  "text-left text-[12.5px] font-medium text-muted";
 
 // Table for the list pages. Search, sort and paging state comes from
 // useServerTable through the `server` prop.
@@ -148,7 +146,7 @@ function DataTable({
   return (
     <div className="min-w-0">
       {/* toolbar */}
-      <div className="flex flex-col gap-3 pb-2 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-3 rounded-t-xl border border-line bg-surface p-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="relative w-full sm:max-w-xs">
           <SearchIcon
             size={16}
@@ -159,7 +157,7 @@ function DataTable({
             onChange={(event) => setQuery(event.target.value)}
             placeholder={searchPlaceholder}
             aria-label={searchPlaceholder}
-            className="h-10 w-full rounded-xl border border-line bg-surface pl-10 pr-9 text-sm text-fg placeholder:text-faint transition-colors hover:border-strong focus:border-fg focus:outline-none focus:ring-2 focus:ring-fg/15"
+            className="h-9 w-full rounded-lg border border-line bg-bg pl-10 pr-9 text-sm text-fg placeholder:text-faint transition-colors hover:border-strong focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/15"
           />
           {query && (
             <button
@@ -180,16 +178,13 @@ function DataTable({
       </div>
 
       {/* desktop table */}
-      <div className="relative hidden md:block">
+      <div className="relative hidden overflow-hidden rounded-b-xl border-b border-line md:block">
         <div
           ref={scrollRef}
           onScroll={syncEdges}
-          className="max-h-[70vh] overflow-auto"
+          className="overflow-x-hidden border-x border-line"
         >
-          <table
-            className="w-full border-separate border-spacing-x-0 border-spacing-y-2 text-sm"
-            style={{ minWidth: "52rem" }}
-          >
+          <table className="w-full table-fixed border-collapse text-sm">
             <thead>
               <tr>
                 {columns.map((col) => {
@@ -203,7 +198,7 @@ function DataTable({
                       aria-sort={
                         sortable ? ARIA_SORT[dir] || "none" : undefined
                       }
-                      className={cn(headCell, alignClass(col))}
+                      className={cn(headCell, alignClass(col), col.className)}
                     >
                       {sortable ? (
                         <button
@@ -258,7 +253,7 @@ function DataTable({
                     {columns.map((col) => (
                       <td
                         key={col.key}
-                        className={cn(rowCell, alignClass(col))}
+                        className={cn(rowCell, alignClass(col), col.className)}
                       >
                         {renderCell(row, col, index)}
                       </td>
@@ -279,7 +274,7 @@ function DataTable({
                 <tr>
                   <td
                     colSpan={colCount}
-                    className="rounded-xl border border-line bg-surface px-4 py-16"
+                    className="border-b border-x border-line bg-surface px-4 py-16"
                   >
                     {emptyBlock}
                   </td>
@@ -362,7 +357,7 @@ function DataTable({
 
       {/* pagination */}
       {!showEmpty && (
-        <div className="flex flex-col gap-3 pt-2 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col gap-3 border-x border-b border-line bg-surface px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-2 text-[13px] text-muted">
             <span className="hidden sm:inline">Rows per page</span>
             <select
@@ -389,7 +384,7 @@ function DataTable({
             </span>
           </div>
 
-          <div className="flex items-center gap-1.5">
+          <div className="flex w-full items-center justify-between gap-1 sm:w-auto sm:justify-start sm:gap-1.5">
             <IconButton
               icon={ChevronsLeftIcon}
               label="First page"
@@ -403,10 +398,11 @@ function DataTable({
               icon={ChevronLeftIcon}
               disabled={safePage === 0}
               onClick={() => setPage((p) => Math.max(0, p - 1))}
+              className="min-w-0 px-2 sm:px-3"
             >
               Previous
             </Button>
-            <span className="px-1.5 text-[13px] font-medium tabular-nums text-fg">
+            <span className="shrink-0 whitespace-nowrap px-1 text-[13px] font-medium tabular-nums text-fg sm:px-1.5">
               Page {safePage + 1}
               <span className="font-normal text-muted"> of {pageCount}</span>
             </span>
@@ -416,6 +412,7 @@ function DataTable({
               iconRight={ChevronRightIcon}
               disabled={safePage >= pageCount - 1}
               onClick={() => setPage((p) => Math.min(pageCount - 1, p + 1))}
+              className="min-w-0 px-2 sm:px-3"
             >
               Next
             </Button>

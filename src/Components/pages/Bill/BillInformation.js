@@ -20,11 +20,11 @@ function ItemChips({ items = [] }) {
   const [first, ...others] = items;
 
   return (
-    <div className="flex min-w-0 items-center gap-1.5">
-      <span className="min-w-0 truncate rounded-md bg-elevated px-2 py-0.5 text-[12.5px] text-fg">
+    <div className="flex min-w-0 items-center gap-2">
+      <span className="min-w-0 truncate text-[13px] font-medium text-fg">
         {first.productname}
         {first.quantity ? (
-          <span className="ml-1 font-medium tabular-nums text-muted">
+          <span className="ml-1 font-normal tabular-nums text-muted">
             ×{number(first.quantity)}
           </span>
         ) : null}
@@ -32,9 +32,9 @@ function ItemChips({ items = [] }) {
       {others.length > 0 && (
         <span
           title={others.map((p) => p.productname).join(", ")}
-          className="shrink-0 rounded-md bg-elevated px-2 py-0.5 text-[12.5px] tabular-nums text-muted"
+          className="shrink-0 rounded-full bg-elevated px-2 py-0.5 text-[11px] font-medium tabular-nums text-muted"
         >
-          +{others.length}
+          +{others.length} more
         </span>
       )}
     </div>
@@ -81,14 +81,21 @@ function BillInformation() {
       {
         key: "name",
         header: "Customer",
+        className: "w-[14rem]",
         cell: ({ row }) => (
           <div className="flex min-w-0 items-center gap-3">
             <Avatar name={row.name} />
             <div className="min-w-0">
-              <p className="truncate font-medium text-fg">
+              <p
+                className="truncate font-medium text-fg"
+                title={row.name || "Unnamed customer"}
+              >
                 {row.name || "Unnamed customer"}
               </p>
-              <p className="truncate text-[12.5px] tabular-nums text-muted">
+              <p
+                className="truncate text-[12.5px] tabular-nums text-muted"
+                title={`Bill #${row.id}`}
+              >
                 Bill #{row.id}
               </p>
             </div>
@@ -98,6 +105,7 @@ function BillInformation() {
       {
         key: "products",
         header: "Items",
+        className: "w-[16rem]",
         sortable: false,
         wide: true,
         cell: ({ value }) => <ItemChips items={value || []} />,
@@ -106,6 +114,7 @@ function BillInformation() {
         // customer with a GST number = B2B, without = B2C
         key: "gstNo",
         header: "Type",
+        className: "w-[6rem]",
         sortable: false,
         cell: ({ value }) =>
           value ? (
@@ -122,6 +131,7 @@ function BillInformation() {
       {
         key: "createdAt",
         header: "Date",
+        className: "w-[9rem]",
         cell: ({ value }) => (
           <span className="whitespace-nowrap text-muted">
             {value ? moment(value).format("DD MMM YYYY") : "—"}
@@ -132,6 +142,7 @@ function BillInformation() {
         key: "totalproductsprice",
         header: "Total",
         align: "right",
+        className: "w-[10rem]",
         cell: ({ value }) => (
           <span className="text-[14.5px] font-semibold tabular-nums text-fg">
             {money(value)}
