@@ -55,6 +55,8 @@ const NAV = [
         label: "Bills",
         icon: ReceiptIcon,
         tint: "bg-violet/10 text-violet",
+        // new/edit bill form and the invoice view
+        also: ["/billform", "/billtable"],
       },
     ],
   },
@@ -66,10 +68,17 @@ const NAV = [
         label: "Company",
         icon: UserCircleIcon,
         tint: "bg-warning/10 text-warning",
+        // the edit form
+        also: ["/profileform"],
       },
     ],
   },
 ];
+
+// "also" lists other pages that belong to a nav item, so the item stays
+// highlighted and the breadcrumb still shows on them
+const onAlsoPage = (also, pathname) =>
+  Boolean(also?.some((path) => pathname.startsWith(path)));
 
 const COLLAPSE_KEY = "billbox-sidebar-collapsed";
 
@@ -142,6 +151,8 @@ const iconMotion = (collapsed) =>
   );
 
 function NavItems({ collapsed, onNavigate }) {
+  const { pathname } = useLocation();
+
   return (
     <nav className="flex flex-col gap-6 px-3">
       {NAV.map((group) => (
@@ -163,7 +174,7 @@ function NavItems({ collapsed, onNavigate }) {
             {group.title}
           </span>
 
-          {group.items.map(({ to, label, icon: Icon, end, tint }) => (
+          {group.items.map(({ to, label, icon: Icon, end, tint, also }) => (
             <NavLink
               key={to}
               to={to}
@@ -175,41 +186,44 @@ function NavItems({ collapsed, onNavigate }) {
                   "group relative flex items-center rounded-xl px-3 py-2 text-sm",
                   "transition-colors duration-150 focus-ring",
                   ENTER,
-                  isActive
+                  isActive || onAlsoPage(also, pathname)
                     ? "bg-accent/10 font-semibold text-accent"
                     : "font-medium text-muted hover:bg-elevated hover:text-fg"
                 )
               }
             >
-              {({ isActive }) => (
-                <>
-                  {isActive && (
-                    <span
-                      aria-hidden="true"
-                      className="absolute left-0 top-1/2 h-5 w-1 origin-center -translate-y-1/2 rounded-r-full bg-accent animate-mark-in motion-reduce:animate-none"
-                    />
-                  )}
-                  <span
-                    className={cn(
-                      "badge",
-                      iconMotion(collapsed),
-                      "group-hover:-translate-y-px group-active:translate-y-0",
-                      isActive
-                        ? "bg-accent text-accent-fg shadow-soft"
-                        : tint || "bg-elevated text-muted"
+              {({ isActive: exact }) => {
+                const isActive = exact || onAlsoPage(also, pathname);
+                return (
+                  <>
+                    {isActive && (
+                      <span
+                        aria-hidden="true"
+                        className="absolute left-0 top-1/2 h-5 w-1 origin-center -translate-y-1/2 rounded-r-full bg-accent animate-mark-in motion-reduce:animate-none"
+                      />
                     )}
-                  >
-                    <Icon size={16} />
-                  </span>
-                  <span
-                    style={stagger(collapsed, to)}
-                    className={labelMotion(collapsed)}
-                  >
-                    {label}
-                  </span>
-                  {collapsed && <Tip>{label}</Tip>}
-                </>
-              )}
+                    <span
+                      className={cn(
+                        "badge",
+                        iconMotion(collapsed),
+                        "group-hover:-translate-y-px group-active:translate-y-0",
+                        isActive
+                          ? "bg-accent text-accent-fg shadow-soft"
+                          : tint || "bg-elevated text-muted"
+                      )}
+                    >
+                      <Icon size={16} />
+                    </span>
+                    <span
+                      style={stagger(collapsed, to)}
+                      className={labelMotion(collapsed)}
+                    >
+                      {label}
+                    </span>
+                    {collapsed && <Tip>{label}</Tip>}
+                  </>
+                );
+              }}
             </NavLink>
           ))}
         </div>
@@ -308,7 +322,9 @@ function AppShell() {
   const current = useMemo(() => {
     for (const group of NAV) {
       const item = group.items.find((entry) =>
-        entry.end ? pathname === entry.to : pathname.startsWith(entry.to)
+        entry.end
+          ? pathname === entry.to
+          : pathname.startsWith(entry.to) || onAlsoPage(entry.also, pathname)
       );
       if (item) return { group: group.title, label: item.label };
     }
