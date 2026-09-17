@@ -19,7 +19,7 @@ const schema = yup.object({
     .string()
     .matches(/^\d{10}$/, "Enter a 10-digit number")
     .required("Phone number is required"),
-  gstNo: yup.string().trim().required("GST number is required"),
+  gstNo: yup.string().trim(),
 });
 
 function CustomersFrom({ id, open, handleClose, editData, customerData }) {
@@ -125,7 +125,6 @@ function CustomersFrom({ id, open, handleClose, editData, customerData }) {
             label="GST number"
             placeholder="24AAAAA0000A1Z5"
             icon={HashIcon}
-            required
           />
         </div>
         {/* hidden submit button so Enter works */}

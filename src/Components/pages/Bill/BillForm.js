@@ -142,7 +142,7 @@ function BillForm() {
         .string()
         .matches(/^\d{10}$/, "Enter a 10-digit number")
         .required("Phone number is required"),
-      gstNo: yup.string().required("GST number is required"),
+      gstNo: yup.string(),
     }),
     onSubmit: async (values) => {
       if (!lines.length) {
