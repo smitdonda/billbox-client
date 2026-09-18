@@ -142,7 +142,7 @@ function BillInformation() {
         key: "totalproductsprice",
         header: "Total",
         align: "right",
-        className: "w-[10rem]",
+        className: "w-[10rem] min-w-[10rem] whitespace-nowrap",
         cell: ({ value }) => (
           <span className="text-[14.5px] font-semibold tabular-nums text-fg">
             {money(value)}

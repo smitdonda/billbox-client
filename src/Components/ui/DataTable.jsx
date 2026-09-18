@@ -182,9 +182,9 @@ function DataTable({
         <div
           ref={scrollRef}
           onScroll={syncEdges}
-          className="overflow-x-hidden border-x border-line"
+          className="overflow-x-auto border-x border-line"
         >
-          <table className="w-full table-fixed border-collapse text-sm">
+          <table className="w-full min-w-[72rem] table-auto border-collapse text-sm">
             <thead>
               <tr>
                 {columns.map((col) => {
@@ -224,7 +224,10 @@ function DataTable({
                 {rowActions && (
                   <th
                     scope="col"
-                    className={cn(headCell, "w-px whitespace-nowrap")}
+                    className={cn(
+                      headCell,
+                      "w-[12rem] min-w-[12rem] whitespace-nowrap"
+                    )}
                   >
                     <span className="sr-only">Actions</span>
                   </th>
@@ -260,7 +263,10 @@ function DataTable({
                     ))}
                     {rowActions && (
                       <td
-                        className={cn(rowCell, "whitespace-nowrap text-right")}
+                        className={cn(
+                          rowCell,
+                          "w-[12rem] min-w-[12rem] whitespace-nowrap text-right"
+                        )}
                       >
                         <div className="flex items-center justify-end gap-1.5">
                           {rowActions(row)}
